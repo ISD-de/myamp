@@ -1,11 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { getSubfolders } from '@/actions/getFolders';
+import React, {useEffect, useState} from 'react';
+import {getSubfolders} from '@/actions/getFolders';
 
 const CACHE_KEY = 'music_subfolders_cache';
 
-export const FolderLister=()=> {
+interface FolderListerProps {
+  onSelectFolder?: (folderName: string) => void;
+}
+
+export const FolderLister = ({onSelectFolder}: FolderListerProps) => {
   const [folders, setFolders] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,29 +63,24 @@ export const FolderLister=()=> {
     }
   };
   
+  const handleFolderClick = (folder: string) => {
+    if (onSelectFolder) {
+      onSelectFolder(folder);
+    }
+  };
+  
   return (
-    <div className="w-full max-w-xl bg-slate-800 p-6 rounded-xl text-white shadow-lg flex flex-col gap-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold">Unterordner (mit localStorage)</h2>
-        <button
-          onClick={handleRefresh}
-          className="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded transition"
-        >
-          🔄 Cache erneuern
-        </button>
-      </div>
-      
-      {loading && <p className="text-slate-400">Lade Ordner...</p>}
-      
-      {error && <div className="text-red-400 text-sm bg-red-950/50 p-3 rounded">{error}</div>}
-      
+    <div
+      className="w-full h-full overflow-auto overflow-y-auto snap-y snap-mandatory bg-background flex flex-col gap-4">
+      {loading && <div className="p-3 text-main border border-border">Lade Ordner...</div>}
+      {error && <div className="text-main text-sm bg-red-950/50 p-3 border border-border">{error}</div>}
       {!loading && !error && folders.length > 0 && (
-        <div className="mt-2 border border-slate-700 rounded-lg p-4 bg-slate-900">
-          <h3 className="text-sm font-semibold text-slate-400 mb-2">Gefundene Unterordner ({folders.length}):</h3>
-          <ul className="flex flex-col gap-1">
+        <div className="border border-border bg-background">
+          <ul className="flex flex-col ">
             {folders.map((folder, index) => (
-              <li key={index} className="flex items-center gap-2 text-amber-400 text-sm">
-                <span>📁</span>
+              <li key={index}
+                  onClick={() => handleFolderClick(folder)}
+                  className="snap-start text-text-light hover:bg-background-hover text-sm break-all border border-border p-1 -mb-px">
                 <span>{folder}</span>
               </li>
             ))}

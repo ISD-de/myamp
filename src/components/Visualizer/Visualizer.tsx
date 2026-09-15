@@ -1,76 +1,115 @@
 'use client';
 
-import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
-
-interface VisualizerProps {
-  audioElement: HTMLAudioElement | null;
-}
+import React, { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import butterchurn from 'butterchurn';
+import butterchurnPresets from 'butterchurn-presets';
 
 export interface VisualizerRef {
   nextPreset: () => void;
 }
 
-const Visualizer = forwardRef<VisualizerRef, VisualizerProps>(({ audioElement }, ref) => {
+interface VisualizerProps {
+  audioElement: HTMLAudioElement | null;
+}
+
+export const Visualizer = forwardRef<VisualizerRef, VisualizerProps>(({ audioElement }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const visualizerRef = useRef<any>(null);
-  const presetsRef = useRef<any>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
+  const visualizerInstanceRef = useRef<any>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const presetsRef = useRef<Record<string, any>>({});
+  const presetKeysRef = useRef<string[]>([]);
+  const currentPresetIndexRef = useRef<number>(0);
   
-  
-  const loadNextPreset = () => {
-    if (!visualizerRef.current || !presetsRef.current) return;
-    const presetNames = Object.keys(presetsRef.current);
-    const randomPreset = presetsRef.current[presetNames[Math.floor(Math.random() * presetNames.length)]];
-    visualizerRef.current.loadPreset(randomPreset, 2.0); // 2.0s Überblendung
-  };
-  
-  
+  // 1. nextPreset via Ref bereitstellen
   useImperativeHandle(ref, () => ({
-    nextPreset: loadNextPreset,
+    nextPreset: () => {
+      const keys = presetKeysRef.current;
+      if (keys.length === 0 || !visualizerInstanceRef.current) return;
+      
+      currentPresetIndexRef.current = (currentPresetIndexRef.current + 1) % keys.length;
+      const nextKey = keys[currentPresetIndexRef.current];
+      const preset = presetsRef.current[nextKey];
+      
+      // Blend-Zeit in Sekunden (z. B. 2.7s Übergang)
+      visualizerInstanceRef.current.loadPreset(preset, 2.7);
+    },
   }));
   
   useEffect(() => {
-    if (!canvasRef.current || !audioElement) return;
+    if (!audioElement || !canvasRef.current) return;
     
-    const butterchurn = require('butterchurn');
-    const butterchurnPresets = require('butterchurn-presets');
     
-    if (!audioCtxRef.current) {
+    
+    // 2. AudioContext & Source initialisieren
+    if (!audioContextRef.current) {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      audioCtxRef.current = new AudioCtx();
-      
-      const source = audioCtxRef.current.createMediaElementSource(audioElement);
-      
-      visualizerRef.current = butterchurn.default
-        ? butterchurn.default.createVisualizer(audioCtxRef.current, canvasRef.current, { width: 800, height: 600 })
-        : butterchurn.createVisualizer(audioCtxRef.current, canvasRef.current, { width: 800, height: 600 });
-      
-      visualizerRef.current.connectAudio(source);
-      source.connect(audioCtxRef.current.destination);
-      
-      presetsRef.current = butterchurnPresets.getPresets ? butterchurnPresets.getPresets() : butterchurnPresets;
-      loadNextPreset();
-      
-      let animationFrameId: number;
-      const render = () => {
-        animationFrameId = requestAnimationFrame(render);
-        visualizerRef.current.render();
-      };
-      render();
-      
-      return () => {
-        cancelAnimationFrame(animationFrameId);
-      };
+      audioContextRef.current = new AudioCtx();
     }
+    const audioCtx = audioContextRef.current;
+    
+    if (!sourceNodeRef.current) {
+      try {
+        sourceNodeRef.current = audioCtx.createMediaElementSource(audioElement);
+        sourceNodeRef.current.connect(audioCtx.destination);
+      } catch (e) {
+        console.warn('AudioSource bereits verbunden:', e);
+      }
+    }
+    
+    // 3. Presets laden
+    const allPresets = butterchurnPresets.getPresets();
+    presetsRef.current = allPresets;
+    presetKeysRef.current = Object.keys(allPresets);
+    
+    // 4. Butterchurn Visualizer erstellen
+    const width = canvasRef.current.clientWidth || 800;
+    const height = canvasRef.current.clientHeight || 400;
+    
+    const visualizer = butterchurn.createVisualizer(audioCtx, canvasRef.current, {
+      width,
+      height,
+      pixelRatio: window.devicePixelRatio || 1,
+    });
+    
+    visualizerInstanceRef.current = visualizer;
+    visualizer.connectAudio(sourceNodeRef.current);
+    
+    // Initiales Preset laden
+    if (presetKeysRef.current.length > 0) {
+      const initialKey = presetKeysRef.current[0];
+      visualizer.loadPreset(allPresets[initialKey], 0);
+    }
+    
+    // 5. Render-Schleife
+    let animationFrameId: number;
+    const render = () => {
+      animationFrameId = requestAnimationFrame(render);
+      
+      if (audioCtx.state === 'suspended' && !audioElement.paused) {
+        audioCtx.resume();
+      }
+      
+      visualizer.render();
+    };
+    
+    render();
+    
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
   }, [audioElement]);
   
   return (
-    <canvas
-      ref={canvasRef}
-      className="w-full h-[500px] bg-black rounded-lg shadow-xl"
-    />
+    <div className="w-full h-[450px] border border-slate-700 rounded-xl overflow-hidden bg-black shadow-2xl relative">
+      <canvas
+        ref={canvasRef}
+        className="w-full h-full block"
+      />
+    </div>
   );
 });
 
 Visualizer.displayName = 'Visualizer';
+
 export default Visualizer;
