@@ -61,6 +61,7 @@ export default function Home(): React.JSX.Element {
           🎵 Spielt gerade: <span className="text-brand-text">{currentSong || 'Keine Auswahl'}</span>
         </p>
         
+        <div className="w-1/2">
         <AudioPlayer
           audioSrc={audioSrc}
           currentSong={currentSong}
@@ -70,6 +71,7 @@ export default function Home(): React.JSX.Element {
             }
           }}
         />
+        </div>
         
         {/* Visualizer wird erst gerendert/verbunden, wenn das audioElement bereitsteht */}
         {audioElement && (
