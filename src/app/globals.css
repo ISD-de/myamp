@@ -6,6 +6,17 @@
     --color-border:#333333;
     --color-text:#eeeeee;
     --color-text-light:#aaaabb;
+
+
+    --color-player-bg:#23272b;
+    --color-player-border:#15171a;
+    --color-player-eq-bg:#18191b;
+    --color-player-accent:#b0b5c0;
+    --color-player-text-info: #999999;
+    --color-player-text-disabled: #1c6977;
+    --color-player-text-muted: #28c0db;
+    --color-player-text-highlight: #00ffcc;
+    --color-player-divider: #2d3137;
 }
 
 ::-webkit-scrollbar {

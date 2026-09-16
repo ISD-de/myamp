@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, {useRef, useState} from 'react';
 import DirectoryScanner from '@/components/DirectoryScanner/DirectoryScanner';
 import SongLister from '@/components/SongLister/SongLister';
-import Visualizer, { VisualizerRef } from '@/components/Visualizer/Visualizer';
+import Visualizer, {VisualizerRef} from '@/components/Visualizer/Visualizer';
 import PresetSelector from '@/components/VisualizerPresetsList/VisualizerPresetsList';
 import AudioPlayer from '@/components/AudioPlayer/AudioPlayer';
 
@@ -39,11 +39,8 @@ export default function Home(): React.JSX.Element {
       : null;
   
   return (
-    <main className="min-h-screen bg-background p-4 flex flex-col gap-6">
-      {/* OBERER BEREICH: Player/EQ (Links) + Visualizer (Rechts) */}
-      <div className="flex flex-col md:flex-row gap-4 items-astretch w-full">
-        
-        {/* Linke Spalte: Player + Equalizer */}
+    <main className="min-h-screen bg-background p-1 flex flex-col">
+      <div className="flex flex-col gap-0 md:gap-1 md:flex-row items-astretch w-full">
         <div className="w-full md:w-125">
           <AudioPlayer
             audioSrc={audioSrc}
@@ -57,25 +54,20 @@ export default function Home(): React.JSX.Element {
             }}
           />
         </div>
-        
-        {/* Rechte Spalte: Visualizer füllt die restliche Breite & exakte Höhe aus */}
         {audioElement && (
-          <div className="flex-1 flex flex-col justify-between bg-black/40 border border-slate-800 rounded-lg p-2 gap-2 overflow-hidden">
-            
-            {/* Visualizer-Canvas Bereich (dehnt sich vertikal voll aus) */}
-            <div className="flex-1 relative min-h-0 w-full overflow-hidden rounded">
+          <div
+            className="flex-1 flex flex-col justify-between bg-player-bg border border-player-border overflow-hidden">
+            <div className="flex-1 relative min-h-0 w-full overflow-hidden">
               <Visualizer
                 ref={visualizerRef}
                 audioElement={audioElement}
               />
             </div>
-            
-            {/* Visualizer Steuerung / Presets am unteren Rand */}
-            <div className="flex items-center justify-between gap-4 pt-1 border-t border-slate-800/80">
-              <PresetSelector onPresetChange={handlePresetChange} />
+            <div className="flex items-center justify-between gap-0 border-t border-player-border bg-player-border">
+              <PresetSelector onPresetChange={handlePresetChange}/>
               <button
                 onClick={() => visualizerRef.current?.nextPreset()}
-                className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-3 py-1.5 rounded transition active:scale-95 whitespace-nowrap"
+                className="text-white text-xs font-semibold px-3 transition active:scale-95 whitespace-nowrap"
               >
                 🔀 Preset wechseln
               </button>
@@ -83,14 +75,12 @@ export default function Home(): React.JSX.Element {
           </div>
         )}
       </div>
-      
-      {/* UNTERER BEREICH: Ordner & Songs */}
-      <div className="flex flex-row gap-4">
-        <div className="w-1/2 h-96">
-          <DirectoryScanner onSelectFolder={onSelectFolder} />
+      <div className="flex flex-row">
+        <div className="w-1/2">
+          <DirectoryScanner onSelectFolder={onSelectFolder}/>
         </div>
-        <div className="w-1/2 h-96">
-          <SongLister folderName={currentFolder} onSelectSong={onSelectSong} />
+        <div className="w-1/2 -ml-0.5">
+          <SongLister folderName={currentFolder} onSelectSong={onSelectSong}/>
         </div>
       </div>
     </main>

@@ -46,7 +46,7 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
     <select
       value={selectedPreset}
       onChange={handleChange}
-      className={`bg-slate-800 text-white text-xs border border-slate-700 rounded px-2 py-1 max-w-62.5 truncate focus:outline-none cursor-pointer ${className}`}
+      className={`bg-player-border text-white text-xs border border-player-border px-2 py-1 max-w-62.5 truncate focus:outline-none cursor-pointer ${className}`}
     >
       {presetKeys.map((name) => (
         <option key={name} value={name}>

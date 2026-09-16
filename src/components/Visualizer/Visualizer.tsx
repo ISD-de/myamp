@@ -42,7 +42,7 @@ export const Visualizer = forwardRef<VisualizerRef, VisualizerProps>(({audioElem
       if (visualizerInstanceRef.current && presetData) {
         visualizerInstanceRef.current.loadPreset(presetData, blendTime);
       }
-    },
+    }
   }));
   
   useEffect(() => {
@@ -109,10 +109,8 @@ export const Visualizer = forwardRef<VisualizerRef, VisualizerProps>(({audioElem
     };
   }, [audioElement]);
   
- 
-  
   return (
-    <div className="border border-slate-700 rounded-xl overflow-hidden bg-black shadow-2xl relative">
+    <div className=" overflow-hidden bg-player-bg relative">
       <canvas
         ref={canvasRef}
         className="w-full h-full block"

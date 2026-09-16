@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 
 export interface BandSetting {
   label: string;
@@ -9,16 +9,16 @@ export interface BandSetting {
 }
 
 const ITUNES_BANDS: BandSetting[] = [
-  { label: '70', frequency: 70, gain: 3 },
-  { label: '180', frequency: 180, gain: -4 },
-  { label: '320', frequency: 320, gain: -6 },
-  { label: '600', frequency: 600, gain: -9 },
-  { label: '1K', frequency: 1000, gain: -9 },
-  { label: '3K', frequency: 3000, gain: -8 },
-  { label: '6K', frequency: 6000, gain: -5 },
-  { label: '12K', frequency: 12000, gain: -3 },
-  { label: '14K', frequency: 14000, gain: 2 },
-  { label: '16K', frequency: 16000, gain: 7 },
+  {label: '70', frequency: 70, gain: 3},
+  {label: '180', frequency: 180, gain: -4},
+  {label: '320', frequency: 320, gain: -6},
+  {label: '600', frequency: 600, gain: -9},
+  {label: '1K', frequency: 1000, gain: -9},
+  {label: '3K', frequency: 3000, gain: -8},
+  {label: '6K', frequency: 6000, gain: -5},
+  {label: '12K', frequency: 12000, gain: -3},
+  {label: '14K', frequency: 14000, gain: 2},
+  {label: '16K', frequency: 16000, gain: 7}
 ];
 
 interface EqualizerProps {
@@ -30,16 +30,17 @@ interface EqualizerProps {
 export const Equalizer: React.FC<EqualizerProps> = ({
                                                       audioContext,
                                                       sourceNode,
-                                                      destinationNode,
+                                                      destinationNode
                                                     }) => {
   const [enabled, setEnabled] = useState(true);
-  const [preampGain, setPreampGain] = useState(6); // Preamp in dB
-  const [pan, setPan] = useState(0); // -1 (L) bis +1 (R)
+  const [preampGain, setPreampGain] = useState(6);
+  const [pan, setPan] = useState(0);
   const [bands, setBands] = useState<BandSetting[]>(ITUNES_BANDS);
   
   const preampNodeRef = useRef<GainNode | null>(null);
   const pannerNodeRef = useRef<StereoPannerNode | null>(null);
   const filterNodesRef = useRef<BiquadFilterNode[]>([]);
+  
   
   useEffect(() => {
     if (!audioContext || !sourceNode) return;
@@ -47,12 +48,10 @@ export const Equalizer: React.FC<EqualizerProps> = ({
     sourceNode.disconnect();
     const targetDestination = destinationNode || audioContext.destination;
     
-    // 1. Preamp Node (Lautstärke-Offset)
     const preamp = audioContext.createGain();
-    preamp.gain.value = Math.pow(10, preampGain / 20); // dB zu Gain Umrechnung
+    preamp.gain.value = Math.pow(10, preampGain / 20);
     preampNodeRef.current = preamp;
     
-    // 2. Stereo Panner Node (L / R Balance)
     let panner: StereoPannerNode | null = null;
     if (audioContext.createStereoPanner) {
       panner = audioContext.createStereoPanner();
@@ -60,7 +59,6 @@ export const Equalizer: React.FC<EqualizerProps> = ({
       pannerNodeRef.current = panner;
     }
     
-    // 3. 10 EQ Biquad Filter Nodes
     const filters = ITUNES_BANDS.map((band, index) => {
       const filter = audioContext.createBiquadFilter();
       if (index === 0) filter.type = 'lowshelf';
@@ -75,7 +73,6 @@ export const Equalizer: React.FC<EqualizerProps> = ({
     });
     filterNodesRef.current = filters;
     
-    // Signalkette aufbauen: Source -> Preamp -> Filter[0..N] -> Panner -> Destination
     let lastNode: AudioNode = sourceNode;
     lastNode.connect(preamp);
     lastNode = preamp;
@@ -99,11 +96,11 @@ export const Equalizer: React.FC<EqualizerProps> = ({
       try {
         sourceNode.disconnect();
         sourceNode.connect(targetDestination);
-      } catch (e) {}
+      } catch (e) {
+      }
     };
   }, [audioContext, sourceNode, destinationNode]);
   
-  // Handler für Preamp
   const handlePreampChange = (val: number) => {
     setPreampGain(val);
     if (preampNodeRef.current) {
@@ -111,7 +108,6 @@ export const Equalizer: React.FC<EqualizerProps> = ({
     }
   };
   
-  // Handler für Balance (L/R)
   const handlePanChange = (val: number) => {
     setPan(val);
     if (pannerNodeRef.current) {
@@ -119,7 +115,6 @@ export const Equalizer: React.FC<EqualizerProps> = ({
     }
   };
   
-  // Handler für Frequenzbänder
   const handleBandChange = (index: number, newGain: number) => {
     const updated = [...bands];
     updated[index].gain = newGain;
@@ -130,7 +125,6 @@ export const Equalizer: React.FC<EqualizerProps> = ({
     }
   };
   
-  // On/Off Toggle Switch
   const toggleEnabled = () => {
     const nextState = !enabled;
     setEnabled(nextState);
@@ -140,11 +134,11 @@ export const Equalizer: React.FC<EqualizerProps> = ({
   };
   
   return (
-    <div className="bg-[#18191b] border border-[#2d3035] p-3 rounded-lg shadow-2xl w-full md:max-w-137.5 font-mono text-[11px] text-[#8a8e96] select-none">
-      {/* Top Header Controls (Ein/Aus, Preset Selector, L/R Panner) */}
+    <div
+      className="bg-player-eq-bg border-2 border-player-border -mt-2 p-3 w-full md:max-w-137.5 font-mono text-xs text-text select-none">
+      
       <div className="flex items-center justify-between pb-3 mb-2 border-b border-[#25282d]">
         <div className="flex items-center gap-2">
-          {/* Toggle Button */}
           <button
             onClick={toggleEnabled}
             className={`px-2 py-0.5 rounded border text-[10px] font-bold transition ${
@@ -155,14 +149,10 @@ export const Equalizer: React.FC<EqualizerProps> = ({
           >
             {enabled ? 'ON' : 'OFF'}
           </button>
-          
-          {/* Preset Selector simulation */}
           <div className="flex items-center bg-[#121315] border border-[#2d3035] rounded px-1.5 py-0.5 text-[#a0a5b0]">
             <span>Flat</span>
           </div>
         </div>
-        
-        {/* L / R Balance Slider */}
         <div className="flex items-center gap-2">
           <span>L</span>
           <input
@@ -177,16 +167,12 @@ export const Equalizer: React.FC<EqualizerProps> = ({
           <span>R</span>
         </div>
       </div>
-      
-      {/* Main Equalizer Rack (Preamp + 10 Bands) */}
       <div className="relative flex justify-between items-center px-1 pt-2 pb-1">
-        {/* dB Scales Background Grid (+12, 0, -12) */}
-        <div className="absolute left-7 right-0 top-6 bottom-7 flex flex-col justify-between pointer-events-none opacity-20 border-y border-[#aaa]">
+        <div
+          className="absolute left-7 right-0 top-6 bottom-7 flex flex-col justify-between pointer-events-none opacity-20 border-y border-[#aaa]">
           <div className="border-b border-dashed border-white w-full h-0"></div>
           <div className="border-b border-dashed border-white w-full h-0"></div>
         </div>
-        
-        {/* PREAMP SLIDER */}
         <div className="flex flex-col items-center gap-1 z-10">
           <span className="text-[9px] text-[#666] h-3">
             {preampGain > 0 ? `+${preampGain}` : preampGain}
@@ -203,9 +189,8 @@ export const Equalizer: React.FC<EqualizerProps> = ({
           <span className="font-bold text-[#a0a5b0] mt-1">PRE</span>
         </div>
         
-        <div className="w-px h-28 bg-[#282b30] mx-1 z-10" />
+        <div className="w-px h-28 bg-[#282b30] mx-1 z-10"/>
         
-        {/* 10 FREQUENCY BANDS */}
         {bands.map((band, i) => (
           <div key={band.label} className="flex flex-col items-center gap-1 z-10">
             <span className="text-[9px] text-[#666] h-3">
@@ -225,6 +210,7 @@ export const Equalizer: React.FC<EqualizerProps> = ({
           </div>
         ))}
       </div>
+    
     </div>
   );
 };
