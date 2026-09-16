@@ -5,6 +5,7 @@ import DirectoryScanner from '@/components/DirectoryScanner/DirectoryScanner';
 import SongLister from '@/components/SongLister/SongLister';
 import Visualizer, { VisualizerRef } from '@/components/Visualizer/Visualizer';
 import PresetSelector from '@/components/VisualizerPresetsList/VisualizerPresetsList';
+import AudioPlayer from '@/components/AudioPlayer/AudioPlayer';
 
 export default function Home(): React.JSX.Element {
   const [currentFolder, setCurrentFolder] = useState<string | null>(null);
@@ -60,21 +61,15 @@ export default function Home(): React.JSX.Element {
           🎵 Spielt gerade: <span className="text-brand-text">{currentSong || 'Keine Auswahl'}</span>
         </p>
         
-        {/* Ref-Callback setzt das Element direkt in den State und löst ein sauberes Re-Render für den Visualizer aus */}
-        <audio
-          ref={(node) => {
-            audioRef.current = node;
+        <AudioPlayer
+          audioSrc={audioSrc}
+          currentSong={currentSong}
+          onAudioElementReady={(node) => {
             if (node && node !== audioElement) {
               setAudioElement(node);
             }
           }}
-          controls
-          crossOrigin="anonymous"
-          className="w-full accent-brand-accent"
-        >
-          {audioSrc && <source src={audioSrc} type="audio/mpeg" />}
-          Browser unterstützt kein Audio.
-        </audio>
+        />
         
         {/* Visualizer wird erst gerendert/verbunden, wenn das audioElement bereitsteht */}
         {audioElement && (
