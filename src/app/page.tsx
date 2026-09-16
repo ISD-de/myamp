@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import DirectoryScanner from '@/components/DirectoryScanner/DirectoryScanner';
 import SongLister from '@/components/SongLister/SongLister';
 import Visualizer, { VisualizerRef } from '@/components/Visualizer/Visualizer';
+import PresetSelector from '@/components/VisualizerPresetsList/VisualizerPresetsList';
 
 export default function Home(): React.JSX.Element {
   const [currentFolder, setCurrentFolder] = useState<string | null>(null);
@@ -17,6 +18,15 @@ export default function Home(): React.JSX.Element {
   const onSelectFolder = (folder: string) => {
     setCurrentFolder(folder);
     setCurrentSong(null);
+  };
+  
+  const handlePresetChange = (presetData: any, presetName: string) => {
+    console.log('Neues Preset gewählt:', presetName);
+    
+    // Übergabe an den Visualizer (falls du eine geladene Instanz/Ref hast)
+    if (visualizerRef.current?.loadPreset) {
+      visualizerRef.current.loadPreset(presetData, 1.5);
+    }
   };
   
   const onSelectSong = (song: string) => {
@@ -70,6 +80,15 @@ export default function Home(): React.JSX.Element {
         {audioElement && (
           <div className="w-1/3 h-1/3">
           <Visualizer ref={visualizerRef} audioElement={audioElement} />
+            <div className="flex items-center gap-4">
+              <PresetSelector onPresetChange={handlePresetChange} />
+              <button
+                onClick={() => visualizerRef.current?.nextPreset()}
+                className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition active:scale-95"
+              >
+                🔀 Preset wechseln
+              </button>
+            </div>
           </div>
         )}
       </div>

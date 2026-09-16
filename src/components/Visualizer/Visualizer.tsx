@@ -12,6 +12,11 @@ interface VisualizerProps {
   audioElement: HTMLAudioElement | null;
 }
 
+export interface VisualizerRef {
+  nextPreset: () => void;
+  loadPreset: (presetData: any, blendTime?: number) => void;
+}
+
 export const Visualizer = forwardRef<VisualizerRef, VisualizerProps>(({audioElement}, ref) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const visualizerInstanceRef = useRef<any>(null);
@@ -31,9 +36,13 @@ export const Visualizer = forwardRef<VisualizerRef, VisualizerProps>(({audioElem
       const nextKey = keys[currentPresetIndexRef.current];
       const preset = presetsRef.current[nextKey];
       
-      // Blend-Zeit in Sekunden (z. B. 2.7s Übergang)
       visualizerInstanceRef.current.loadPreset(preset, 2.7);
-    }
+    },
+    loadPreset: (presetData: any, blendTime: number = 1.5) => {
+      if (visualizerInstanceRef.current && presetData) {
+        visualizerInstanceRef.current.loadPreset(presetData, blendTime);
+      }
+    },
   }));
   
   useEffect(() => {
@@ -99,6 +108,8 @@ export const Visualizer = forwardRef<VisualizerRef, VisualizerProps>(({audioElem
       cancelAnimationFrame(animationFrameId);
     };
   }, [audioElement]);
+  
+ 
   
   return (
     <div className="border border-slate-700 rounded-xl overflow-hidden bg-black shadow-2xl relative">
