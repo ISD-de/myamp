@@ -11,9 +11,11 @@ export default function Home(): React.JSX.Element {
   const [currentFolder, setCurrentFolder] = useState<string | null>(null);
   const [currentSong, setCurrentSong] = useState<string | null>(null);
   
-  // State für das geladene HTMLAudioElement definieren
+  // States & Refs für Audio und Visualizer
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
+  const [sourceNode, setSourceNode] = useState<MediaElementAudioSourceNode | null>(null);
+  
   const visualizerRef = useRef<VisualizerRef | null>(null);
   
   const onSelectFolder = (folder: string) => {
@@ -22,9 +24,6 @@ export default function Home(): React.JSX.Element {
   };
   
   const handlePresetChange = (presetData: any, presetName: string) => {
-    console.log('Neues Preset gewählt:', presetName);
-    
-    // Übergabe an den Visualizer (falls du eine geladene Instanz/Ref hast)
     if (visualizerRef.current?.loadPreset) {
       visualizerRef.current.loadPreset(presetData, 1.5);
     }
@@ -34,60 +33,65 @@ export default function Home(): React.JSX.Element {
     setCurrentSong(song);
   };
   
-  const audioSrc = currentFolder && currentSong
-    ? `/api/stream?folder=${encodeURIComponent(currentFolder)}&song=${encodeURIComponent(currentSong)}`
-    : null;
-  
-  useEffect(() => {
-    if (audioSrc && audioRef.current) {
-      audioRef.current.src = audioSrc;
-      audioRef.current.load();
-      audioRef.current.play().catch((err) => console.log('Autoplay blockiert:', err));
-    }
-  }, [audioSrc]);
+  const audioSrc =
+    currentFolder && currentSong
+      ? `/api/stream?folder=${encodeURIComponent(currentFolder)}&song=${encodeURIComponent(currentSong)}`
+      : null;
   
   return (
-    <main className="min-h-screen bg-slate-900 text-white p-8 flex flex-col gap-6">
-      <h1 className="text-3xl font-bold">Audio Visualizer</h1>
-      <div className="w-5/12 h-75">
-        <DirectoryScanner onSelectFolder={onSelectFolder} />
-      </div>
-      <div className="w-5/12 h-75">
-        <SongLister folderName={currentFolder} onSelectSong={onSelectSong} />
-      </div>
-      
-      <div className="border border-border p-4 bg-brand-card rounded-lg flex flex-col gap-2">
-        <p className="text-sm font-medium text-brand-accent">
-          🎵 Spielt gerade: <span className="text-brand-text">{currentSong || 'Keine Auswahl'}</span>
-        </p>
+    <main className="min-h-screen bg-background p-4 flex flex-col gap-6">
+      {/* OBERER BEREICH: Player/EQ (Links) + Visualizer (Rechts) */}
+      <div className="flex flex-col md:flex-row gap-4 items-astretch w-full">
         
-        <div className="w-1/2">
-        <AudioPlayer
-          audioSrc={audioSrc}
-          currentSong={currentSong}
-          onAudioElementReady={(node) => {
-            if (node && node !== audioElement) {
-              setAudioElement(node);
-            }
-          }}
-        />
+        {/* Linke Spalte: Player + Equalizer */}
+        <div className="w-full md:w-125">
+          <AudioPlayer
+            audioSrc={audioSrc}
+            currentSong={currentSong}
+            onAudioElementReady={(node, ctx, source) => {
+              if (node && node !== audioElement) {
+                setAudioElement(node);
+              }
+              setAudioContext(ctx);
+              setSourceNode(source);
+            }}
+          />
         </div>
         
-        {/* Visualizer wird erst gerendert/verbunden, wenn das audioElement bereitsteht */}
+        {/* Rechte Spalte: Visualizer füllt die restliche Breite & exakte Höhe aus */}
         {audioElement && (
-          <div className="w-1/3 h-1/3">
-          <Visualizer ref={visualizerRef} audioElement={audioElement} />
-            <div className="flex items-center gap-4">
+          <div className="flex-1 flex flex-col justify-between bg-black/40 border border-slate-800 rounded-lg p-2 gap-2 overflow-hidden">
+            
+            {/* Visualizer-Canvas Bereich (dehnt sich vertikal voll aus) */}
+            <div className="flex-1 relative min-h-0 w-full overflow-hidden rounded">
+              <Visualizer
+                ref={visualizerRef}
+                audioElement={audioElement}
+              />
+            </div>
+            
+            {/* Visualizer Steuerung / Presets am unteren Rand */}
+            <div className="flex items-center justify-between gap-4 pt-1 border-t border-slate-800/80">
               <PresetSelector onPresetChange={handlePresetChange} />
               <button
                 onClick={() => visualizerRef.current?.nextPreset()}
-                className="bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition active:scale-95"
+                className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-3 py-1.5 rounded transition active:scale-95 whitespace-nowrap"
               >
                 🔀 Preset wechseln
               </button>
             </div>
           </div>
         )}
+      </div>
+      
+      {/* UNTERER BEREICH: Ordner & Songs */}
+      <div className="flex flex-row gap-4">
+        <div className="w-1/2 h-96">
+          <DirectoryScanner onSelectFolder={onSelectFolder} />
+        </div>
+        <div className="w-1/2 h-96">
+          <SongLister folderName={currentFolder} onSelectSong={onSelectSong} />
+        </div>
       </div>
     </main>
   );
