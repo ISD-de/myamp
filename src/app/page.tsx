@@ -38,10 +38,10 @@ export default function Home(): React.JSX.Element {
   return (
     <main className="min-h-screen bg-slate-900 text-white p-8 flex flex-col gap-6">
       <h1 className="text-3xl font-bold">Audio Visualizer</h1>
-      <div className="w-5/12 h-[300px]">
+      <div className="w-5/12 h-75">
         <DirectoryScanner onSelectFolder={onSelectFolder} />
       </div>
-      <div className="w-5/12 h-[300px]">
+      <div className="w-5/12 h-75">
         <SongLister folderName={currentFolder} onSelectSong={onSelectSong} />
       </div>
       
@@ -68,7 +68,9 @@ export default function Home(): React.JSX.Element {
         
         {/* Visualizer wird erst gerendert/verbunden, wenn das audioElement bereitsteht */}
         {audioElement && (
+          <div className="w-1/3 h-1/3">
           <Visualizer ref={visualizerRef} audioElement={audioElement} />
+          </div>
         )}
       </div>
     </main>

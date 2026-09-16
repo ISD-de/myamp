@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, {forwardRef, useEffect, useImperativeHandle, useRef} from 'react';
 import butterchurn from 'butterchurn';
 import butterchurnPresets from 'butterchurn-presets';
 
@@ -12,7 +12,7 @@ interface VisualizerProps {
   audioElement: HTMLAudioElement | null;
 }
 
-export const Visualizer = forwardRef<VisualizerRef, VisualizerProps>(({ audioElement }, ref) => {
+export const Visualizer = forwardRef<VisualizerRef, VisualizerProps>(({audioElement}, ref) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const visualizerInstanceRef = useRef<any>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -33,13 +33,11 @@ export const Visualizer = forwardRef<VisualizerRef, VisualizerProps>(({ audioEle
       
       // Blend-Zeit in Sekunden (z. B. 2.7s Übergang)
       visualizerInstanceRef.current.loadPreset(preset, 2.7);
-    },
+    }
   }));
   
   useEffect(() => {
     if (!audioElement || !canvasRef.current) return;
-    
-    
     
     // 2. AudioContext & Source initialisieren
     if (!audioContextRef.current) {
@@ -69,11 +67,13 @@ export const Visualizer = forwardRef<VisualizerRef, VisualizerProps>(({ audioEle
     const visualizer = butterchurn.createVisualizer(audioCtx, canvasRef.current, {
       width,
       height,
-      pixelRatio: window.devicePixelRatio || 1,
+      pixelRatio: window.devicePixelRatio || 1
     });
     
     visualizerInstanceRef.current = visualizer;
-    visualizer.connectAudio(sourceNodeRef.current);
+    if (sourceNodeRef.current) {
+      visualizer.connectAudio(sourceNodeRef.current);
+    }
     
     // Initiales Preset laden
     if (presetKeysRef.current.length > 0) {
@@ -101,7 +101,7 @@ export const Visualizer = forwardRef<VisualizerRef, VisualizerProps>(({ audioEle
   }, [audioElement]);
   
   return (
-    <div className="w-full h-[450px] border border-slate-700 rounded-xl overflow-hidden bg-black shadow-2xl relative">
+    <div className="border border-slate-700 rounded-xl overflow-hidden bg-black shadow-2xl relative">
       <canvas
         ref={canvasRef}
         className="w-full h-full block"
