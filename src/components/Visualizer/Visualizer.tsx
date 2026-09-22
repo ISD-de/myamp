@@ -1,23 +1,20 @@
 'use client';
 
-import React, {forwardRef, useEffect, useImperativeHandle, useRef} from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import butterchurn from 'butterchurn';
 import butterchurnPresets from 'butterchurn-presets';
-
-export interface VisualizerRef {
-  nextPreset: () => void;
-}
-
-interface VisualizerProps {
-  audioElement: HTMLAudioElement | null;
-}
 
 export interface VisualizerRef {
   nextPreset: () => void;
   loadPreset: (presetData: any, blendTime?: number) => void;
 }
 
-export const Visualizer = forwardRef<VisualizerRef, VisualizerProps>(({audioElement}, ref) => {
+interface VisualizerProps {
+  audioElement: HTMLAudioElement | null;
+}
+
+export const Visualizer = forwardRef<VisualizerRef, VisualizerProps>(({ audioElement }, ref) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const visualizerInstanceRef = useRef<any>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -26,7 +23,7 @@ export const Visualizer = forwardRef<VisualizerRef, VisualizerProps>(({audioElem
   const presetKeysRef = useRef<string[]>([]);
   const currentPresetIndexRef = useRef<number>(0);
   
-  // 1. nextPreset via Ref bereitstellen
+  // 1. Ref-Methoden für Presets
   useImperativeHandle(ref, () => ({
     nextPreset: () => {
       const keys = presetKeysRef.current;
@@ -42,13 +39,14 @@ export const Visualizer = forwardRef<VisualizerRef, VisualizerProps>(({audioElem
       if (visualizerInstanceRef.current && presetData) {
         visualizerInstanceRef.current.loadPreset(presetData, blendTime);
       }
-    }
+    },
   }));
   
+  // 2. Initialisierung und Render-Loop
   useEffect(() => {
-    if (!audioElement || !canvasRef.current) return;
+    if (!audioElement || !canvasRef.current || !containerRef.current) return;
     
-    // 2. AudioContext & Source initialisieren
+    // AudioContext & Source initialisieren
     if (!audioContextRef.current) {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       audioContextRef.current = new AudioCtx();
@@ -64,19 +62,20 @@ export const Visualizer = forwardRef<VisualizerRef, VisualizerProps>(({audioElem
       }
     }
     
-    // 3. Presets laden
+    // Presets laden
     const allPresets = butterchurnPresets.getPresets();
     presetsRef.current = allPresets;
     presetKeysRef.current = Object.keys(allPresets);
     
-    // 4. Butterchurn Visualizer erstellen
-    const width = canvasRef.current.clientWidth || 800;
-    const height = canvasRef.current.clientHeight || 400;
+    // Aktuelle Maße des Containers ermitteln
+    const width = containerRef.current.clientWidth || window.innerWidth;
+    const height = containerRef.current.clientHeight || window.innerHeight;
     
+    // Butterchurn Visualizer erstellen
     const visualizer = butterchurn.createVisualizer(audioCtx, canvasRef.current, {
       width,
       height,
-      pixelRatio: window.devicePixelRatio || 1
+      pixelRatio: window.devicePixelRatio || 1,
     });
     
     visualizerInstanceRef.current = visualizer;
@@ -90,7 +89,35 @@ export const Visualizer = forwardRef<VisualizerRef, VisualizerProps>(({audioElem
       visualizer.loadPreset(allPresets[initialKey], 0);
     }
     
-    // 5. Render-Schleife
+    // --- DYNAMISCHER RESIZE HANDLER ---
+    const updateSize = () => {
+      if (!visualizerInstanceRef.current || !containerRef.current) return;
+      const newWidth = containerRef.current.clientWidth;
+      const newHeight = containerRef.current.clientHeight;
+      
+      if (newWidth > 0 && newHeight > 0) {
+        // Richtige Butterchurn-Methode: setRendererSize
+        if (typeof visualizerInstanceRef.current.setRendererSize === 'function') {
+          visualizerInstanceRef.current.setRendererSize(
+            newWidth,
+            newHeight,
+            window.devicePixelRatio || 1
+          );
+        } else if (typeof visualizerInstanceRef.current.setSize === 'function') {
+          visualizerInstanceRef.current.setSize(newWidth, newHeight);
+        }
+      }
+    };
+    
+    // Beobachte Größenänderungen des Containers
+    const resizeObserver = new ResizeObserver(() => {
+      updateSize();
+    });
+    resizeObserver.observe(containerRef.current);
+    
+    window.addEventListener('resize', updateSize);
+    
+    // Render-Schleife
     let animationFrameId: number;
     const render = () => {
       animationFrameId = requestAnimationFrame(render);
@@ -106,14 +133,16 @@ export const Visualizer = forwardRef<VisualizerRef, VisualizerProps>(({audioElem
     
     return () => {
       cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', updateSize);
+      resizeObserver.disconnect();
     };
   }, [audioElement]);
   
   return (
-    <div className=" overflow-hidden bg-player-bg relative">
+    <div ref={containerRef} className="w-full h-full min-h-screen relative overflow-hidden bg-player-bg">
       <canvas
         ref={canvasRef}
-        className="w-full h-full block"
+        className="w-full h-full block object-cover"
       />
     </div>
   );

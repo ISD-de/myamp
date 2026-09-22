@@ -146,66 +146,72 @@ export default function Home(): React.JSX.Element {
   }, [isPlaylistOpen]);
   
   return (
-    <main className="min-h-screen bg-background p-1 flex flex-col font-mono">
-      {/* OBERER BEREICH: Player & Visualizer */}
-      <div className="flex flex-col gap-0 md:gap-1 md:flex-row items-stretch w-full">
-        <div className="w-full md:w-125 flex flex-col">
-          <AudioPlayer
-            audioSrc={audioSrc}
-            currentSong={currentSong}
-            onNextSong={handleNextSong}
-            onPrevSong={handlePrevSong}
-            onAudioElementReady={(node, ctx, source) => {
-              if (node && node !== audioElement) {
-                setAudioElement(node);
-              }
-              setAudioContext(ctx);
-              setSourceNode(source);
-            }}
-          />
-          
-          {/* Winamp-Style Button für Playlist/Library */}
-          <div className="mt-1 flex items-center justify-between border-2 border-player-border bg-player-bg p-1">
-            <span className="text-xs text-text-light font-bold">MEDIA LIBRARY</span>
-            <button
-              onClick={() => setIsPlaylistOpen(true)}
-              className="text-xs bg-purple-900/60 hover:bg-purple-700/80 text-white font-semibold px-3 py-1 rounded border border-purple-500/50 transition active:scale-95 flex items-center gap-1.5"
-            >
-              <span>📂</span> Playlist & Explorer {playlist.length > 0 && `(${playlist.length})`}
-            </button>
+    <main className="relative min-h-screen w-full bg-black font-mono overflow-hidden">
+      {/* 1. VISUALIZER ALS VOLLFLÄCHIGER HINTERGRUND (Vollständige Anpassung) */}
+      <div
+        ref={visualizerContainerRef}
+        className="fixed inset-0 z-0 w-screen h-screen overflow-hidden pointer-events-none bg-black flex items-center justify-center"
+      >
+        {audioElement && currentSong && (
+          <div className="w-full h-full relative">
+            <Visualizer ref={visualizerRef} audioElement={audioElement} />
           </div>
-        </div>
-        
-        {/* Visualizer-Container bleibt immer in voller Höhe erhalten */}
-        <div
-          ref={visualizerContainerRef}
-          className="flex-1 flex flex-col justify-between bg-player-bg border border-player-border overflow-hidden min-h-64"
-        >
-          <div className="flex-1 relative min-h-0 w-full overflow-hidden bg-black">
-            {/* Nur wenn ein Song geladen ist & audioElement bereitsteht, wird der Visualizer aktiv */}
-            {audioElement && currentSong && (
-              <Visualizer ref={visualizerRef} audioElement={audioElement} />
-            )}
+        )}
+      </div>
+      
+      {/* 2. OVERLAY-INHALT (PLAYER & STEUERUNG DARÜBER) */}
+      <div className="relative z-10 p-2 flex flex-col gap-2 pointer-events-auto">
+        <div className="w-full md:w-125 flex flex-col gap-1">
+          {/* Audio Player Container mit leichtem Transparenz-Effekt */}
+          <div className="bg-player-bg/90 backdrop-blur-md border-2 border-player-border shadow-2xl">
+            <AudioPlayer
+              audioSrc={audioSrc}
+              currentSong={currentSong}
+              onNextSong={handleNextSong}
+              onPrevSong={handlePrevSong}
+              onAudioElementReady={(node, ctx, source) => {
+                if (node && node !== audioElement) {
+                  setAudioElement(node);
+                }
+                setAudioContext(ctx);
+                setSourceNode(source);
+              }}
+            />
           </div>
           
-          <div className="flex items-center justify-between gap-0 border-t border-player-border bg-player-border">
-            <PresetSelector onPresetChange={handlePresetChange} />
-            <button
-              onClick={() => visualizerRef.current?.nextPreset()}
-              disabled={!currentSong}
-              className="text-white text-xs font-semibold px-3 transition active:scale-95 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              🔀 Preset wechseln
-            </button>
+          {/* Steuerung für Presets & Media Library */}
+          <div className="flex flex-col gap-1 border-2 border-player-border bg-player-bg/90 backdrop-blur-md p-1 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-player-border/50 pb-1">
+              <span className="text-xs text-text-light font-bold">MEDIA LIBRARY</span>
+              <button
+                onClick={() => setIsPlaylistOpen(true)}
+                className="text-xs bg-purple-900/80 hover:bg-purple-700 text-white font-semibold px-3 py-1 rounded border border-purple-500/50 transition active:scale-95 flex items-center gap-1.5"
+              >
+                <span>📂</span> Explorer & Playlist {playlist.length > 0 && `(${playlist.length})`}
+              </button>
+            </div>
+            
+            {/* Preset Selector direkt unter dem Player */}
+            <div className="flex items-center justify-between gap-1 pt-0.5">
+              <PresetSelector onPresetChange={handlePresetChange} />
+              <button
+                onClick={() => visualizerRef.current?.nextPreset()}
+                disabled={!currentSong}
+                className="text-white text-xs font-semibold px-2 py-1 bg-black/40 hover:bg-black/60 border border-player-border rounded transition active:scale-95 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                🔀 Preset wechseln
+              </button>
+            </div>
           </div>
         </div>
       </div>
       
+      {/* 3. MODALES FENSTER (Z-INDEX 50 HOCH GENUG FÜR ALLES) */}
       {isPlaylistOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center">
           <div className="bg-player-bg border-2 border-player-border rounded-lg shadow-2xl w-[90vw] h-[90vh] flex flex-col overflow-hidden">
-            
-            <div className="p-2 border-b border-player-border bg-background/60 flex items-center justify-between shrink-0">
+            {/* Modal Header */}
+            <div className="p-2 border-b border-player-border bg-background/80 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2 text-xs font-bold text-text-light">
                 <span>🎵 MEDIA EXPLORER & PLAYLIST</span>
               </div>
@@ -218,7 +224,7 @@ export default function Home(): React.JSX.Element {
               </button>
             </div>
             
-            
+            {/* Modal Content Grid */}
             <div className="p-2 grid grid-cols-1 md:grid-cols-3 gap-2 flex-1 min-h-0 overflow-hidden">
               <div className="h-full overflow-hidden">
                 <DirectoryScanner onSelectFolder={onSelectFolder} />
