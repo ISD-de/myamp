@@ -10,27 +10,24 @@ import Playlist, { PlaylistItem } from '@/components/Playlist/Playlist';
 
 const PLAYLIST_CACHE_KEY = 'music_player_saved_playlist';
 const CURRENT_INDEX_CACHE_KEY = 'music_player_current_index';
+const SHUFFLE_MODE_CACHE_KEY = 'music_player_is_shuffle';
+const PLAYED_IDS_CACHE_KEY = 'music_player_played_ids';
 
 export default function Home(): React.JSX.Element {
   const [currentFolder, setCurrentFolder] = useState<string | null>(null);
   const [isPlaylistOpen, setIsPlaylistOpen] = useState<boolean>(false);
   
-  // Auto Preset Toggle State
   const [autoPresetEnabled, setAutoPresetEnabled] = useState<boolean>(true);
   
-  // Shuffle State & Historie bereits abgespielter Songs
   const [isShuffle, setIsShuffle] = useState<boolean>(false);
-  const [playedIndices, setPlayedIndices] = useState<number[]>([]);
+  const [playedIds, setPlayedIds] = useState<string[]>([]);
   
-  // States & Refs für die Playlist
   const [playlist, setPlaylist] = useState<PlaylistItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(-1);
   
-  // Flags für Initialisierung & Autostart
-  const [isInitialized, setIsInitialized] = useState<boolean>(false);
+  const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [shouldAutoPlay, setShouldAutoPlay] = useState<boolean>(false);
   
-  // States & Refs für Audio und Visualizer
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [sourceNode, setSourceNode] = useState<MediaElementAudioSourceNode | null>(null);
@@ -45,11 +42,17 @@ export default function Home(): React.JSX.Element {
     ? `/api/stream?folder=${encodeURIComponent(currentItem.folderName)}&song=${encodeURIComponent(currentItem.songName)}`
     : null;
   
-  // 1. LOCALSTORAGE: Wiederherstellen & Autostart-Flag setzen
+  const getSongUniqueId = (item: { folderName: string; songName: string }) => {
+    return `${item.folderName}/${item.songName}`;
+  };
+  
+  // 1. LOCALSTORAGE INITIALISIERUNG
   useEffect(() => {
     try {
       const savedPlaylist = localStorage.getItem(PLAYLIST_CACHE_KEY);
       const savedIndex = localStorage.getItem(CURRENT_INDEX_CACHE_KEY);
+      const savedShuffle = localStorage.getItem(SHUFFLE_MODE_CACHE_KEY);
+      const savedPlayedIds = localStorage.getItem(PLAYED_IDS_CACHE_KEY);
       
       if (savedPlaylist) {
         const parsedPlaylist: PlaylistItem[] = JSON.parse(savedPlaylist);
@@ -64,19 +67,59 @@ export default function Home(): React.JSX.Element {
           }
         }
         
-        // Autostart aktivieren, wenn eine geladene Liste Einträge hat
+        if (savedShuffle !== null) {
+          setIsShuffle(JSON.parse(savedShuffle));
+        }
+        
+        if (savedPlayedIds) {
+          const parsedPlayed = JSON.parse(savedPlayedIds);
+          if (Array.isArray(parsedPlayed)) {
+            setPlayedIds(parsedPlayed);
+          }
+        }
+        
         if (parsedPlaylist.length > 0) {
           setShouldAutoPlay(true);
         }
       }
     } catch (error) {
-      console.warn('Fehler beim Laden der gespeicherten Playlist aus dem localStorage:', error);
+      console.warn('Fehler beim Laden aus dem localStorage:', error);
     } finally {
-      setIsInitialized(true);
+      setIsLoaded(true);
     }
   }, []);
   
-  // 2. AUTOSTART TRIGGER: Startet das Audio, sobald das Element bereit ist
+  // 2. SONG-TRACKING: Wird bei JEDEM Index-Wechsel zuverlässig ausgeführt
+  useEffect(() => {
+    if (!isLoaded || !currentItem) return;
+    
+    const uniqueId = getSongUniqueId(currentItem);
+    
+    setPlayedIds((prev) => {
+      if (!prev.includes(uniqueId)) {
+        const updated = [...prev, uniqueId];
+        localStorage.setItem(PLAYED_IDS_CACHE_KEY, JSON.stringify(updated));
+        return updated;
+      }
+      return prev;
+    });
+  }, [currentIndex, isLoaded]);
+  
+  // 3. PERSISTENZ IM LOCALSTORAGE
+  useEffect(() => {
+    if (!isLoaded) return;
+    
+    try {
+      localStorage.setItem(PLAYLIST_CACHE_KEY, JSON.stringify(playlist));
+      localStorage.setItem(CURRENT_INDEX_CACHE_KEY, currentIndex.toString());
+      localStorage.setItem(SHUFFLE_MODE_CACHE_KEY, JSON.stringify(isShuffle));
+      localStorage.setItem(PLAYED_IDS_CACHE_KEY, JSON.stringify(playedIds));
+    } catch (error) {
+      console.warn('Fehler beim Speichern im localStorage:', error);
+    }
+  }, [playlist, currentIndex, isShuffle, playedIds, isLoaded]);
+  
+  // 4. AUTOSTART TRIGGER
   useEffect(() => {
     if (shouldAutoPlay && audioElement && audioSrc) {
       if (audioContext && audioContext.state === 'suspended') {
@@ -85,29 +128,14 @@ export default function Home(): React.JSX.Element {
       
       audioElement
         .play()
-        .then(() => {
-          setShouldAutoPlay(false);
-        })
+        .then(() => setShouldAutoPlay(false))
         .catch((err) => {
-          console.warn('Autoplay von Browser blockiert (Nutzerinteraktion erforderlich):', err);
+          console.warn('Autoplay blockiert:', err);
           setShouldAutoPlay(false);
         });
     }
   }, [shouldAutoPlay, audioElement, audioSrc, audioContext]);
   
-  // 3. LOCALSTORAGE: Speichern bei Änderungen
-  useEffect(() => {
-    if (!isInitialized) return;
-    
-    try {
-      localStorage.setItem(PLAYLIST_CACHE_KEY, JSON.stringify(playlist));
-      localStorage.setItem(CURRENT_INDEX_CACHE_KEY, currentIndex.toString());
-    } catch (error) {
-      console.warn('Fehler beim Speichern der Playlist im localStorage:', error);
-    }
-  }, [playlist, currentIndex, isInitialized]);
-  
-  // Bei Songwechsel automatisch ein zufälliges Preset laden
   useEffect(() => {
     if (currentSong && autoPresetEnabled && visualizerRef.current) {
       visualizerRef.current.loadRandomPreset(2.0);
@@ -122,7 +150,7 @@ export default function Home(): React.JSX.Element {
     if (!currentFolder) return;
     
     const newItem: PlaylistItem = {
-      id: `${currentFolder}-${song}-${Date.now()}-${Math.random()}`,
+      id: `${currentFolder}/${song}`,
       folderName: currentFolder,
       songName: song,
     };
@@ -138,7 +166,7 @@ export default function Home(): React.JSX.Element {
     if (!currentFolder) return;
     
     const newItems: PlaylistItem[] = songs.map((song) => ({
-      id: `${currentFolder}-${song}-${Date.now()}-${Math.random()}`,
+      id: `${currentFolder}/${song}`,
       folderName: currentFolder,
       songName: song,
     }));
@@ -168,59 +196,79 @@ export default function Home(): React.JSX.Element {
       }
       return updated;
     });
+    
+    setPlayedIds((prev) => {
+      const updated = prev.filter((playedId) => playedId !== id);
+      localStorage.setItem(PLAYED_IDS_CACHE_KEY, JSON.stringify(updated));
+      return updated;
+    });
   };
   
   const handleClearPlaylist = () => {
     setPlaylist([]);
     setCurrentIndex(-1);
-    setPlayedIndices([]);
+    setPlayedIds([]);
     localStorage.removeItem(PLAYLIST_CACHE_KEY);
     localStorage.removeItem(CURRENT_INDEX_CACHE_KEY);
+    localStorage.removeItem(SHUFFLE_MODE_CACHE_KEY);
+    localStorage.removeItem(PLAYED_IDS_CACHE_KEY);
   };
   
-  // Umschalten zwischen Sequentiell & Shuffle
   const handleToggleShuffle = () => {
-    setIsShuffle((prev) => !prev);
-    setPlayedIndices([]);
+    setIsShuffle((prev) => {
+      const nextShuffle = !prev;
+      if (nextShuffle && currentItem) {
+        const initialPlayed = [getSongUniqueId(currentItem)];
+        setPlayedIds(initialPlayed);
+        localStorage.setItem(PLAYED_IDS_CACHE_KEY, JSON.stringify(initialPlayed));
+      } else {
+        setPlayedIds([]);
+        localStorage.setItem(PLAYED_IDS_CACHE_KEY, JSON.stringify([]));
+      }
+      return nextShuffle;
+    });
   };
   
-  // Nächsten Song abspielen (mit Shuffle-Prüfung ohne doppelte Songs)
+  // NÄCHSTER SONG
   const handleNextSong = () => {
     if (playlist.length === 0) return;
     
     if (!isShuffle) {
-      // Normale Abspielfolge (1->2->3...)
       setCurrentIndex((prev) => (prev + 1 < playlist.length ? prev + 1 : 0));
       return;
     }
     
-    // --- SHUFFLE LOGIK ---
-    const updatedPlayed = playedIndices.includes(currentIndex)
-      ? playedIndices
-      : [...playedIndices, currentIndex];
-    
-    let unplayedIndices = playlist
-      .map((_, idx) => idx)
-      .filter((idx) => !updatedPlayed.includes(idx));
+    let unplayedItems = playlist.filter(
+      (item) => !playedIds.includes(getSongUniqueId(item))
+    );
     
     // Falls alle Songs gespielt wurden: Historie zurücksetzen
-    if (unplayedIndices.length === 0) {
-      unplayedIndices = playlist
-        .map((_, idx) => idx)
-        .filter((idx) => idx !== currentIndex);
-      setPlayedIndices([]);
-    } else {
-      setPlayedIndices(updatedPlayed);
+    if (unplayedItems.length === 0) {
+      const currentUniqueId = currentItem ? getSongUniqueId(currentItem) : null;
+      unplayedItems = playlist.filter((item) => getSongUniqueId(item) !== currentUniqueId);
+      
+      if (unplayedItems.length === 0) unplayedItems = playlist;
+      
+      const resetIds = currentUniqueId ? [currentUniqueId] : [];
+      setPlayedIds(resetIds);
+      localStorage.setItem(PLAYED_IDS_CACHE_KEY, JSON.stringify(resetIds));
     }
     
-    // Zufälligen Track aus den verbleibenden wählen
-    const randomIndex = Math.floor(Math.random() * unplayedIndices.length);
-    setCurrentIndex(unplayedIndices[randomIndex]);
+    const randomItem = unplayedItems[Math.floor(Math.random() * unplayedItems.length)];
+    const newIdx = playlist.findIndex((item) => item.id === randomItem.id);
+    
+    if (newIdx !== -1) {
+      setCurrentIndex(newIdx); // Effekt 2 übernimmt automatisch das Hinzufügen zu playedIds
+    }
   };
   
   const handlePrevSong = () => {
     if (playlist.length === 0) return;
     setCurrentIndex((prev) => (prev - 1 >= 0 ? prev - 1 : playlist.length - 1));
+  };
+  
+  const handleSelectTrackFromPlaylist = (index: number) => {
+    setCurrentIndex(index);
   };
   
   const handlePresetChange = (presetData: any, presetName: string) => {
@@ -261,7 +309,6 @@ export default function Home(): React.JSX.Element {
   
   return (
     <main className="relative min-h-screen w-full bg-black font-mono overflow-hidden">
-      {/* VISUALIZER ALS VOLLFLÄCHIGER HINTERGRUND */}
       <div
         ref={visualizerContainerRef}
         className="fixed inset-0 z-0 w-full h-full pointer-events-none"
@@ -271,7 +318,6 @@ export default function Home(): React.JSX.Element {
         )}
       </div>
       
-      {/* OVERLAY-INHALT */}
       <div className="relative z-10 p-2 flex flex-col gap-2 pointer-events-auto">
         <div className="w-full md:w-125 flex flex-col gap-1">
           <div className="bg-player-bg/90 backdrop-blur-md border-2 border-player-border shadow-2xl">
@@ -286,6 +332,8 @@ export default function Home(): React.JSX.Element {
               onAudioElementReady={(node, ctx, source) => {
                 if (node && node !== audioElement) {
                   setAudioElement(node);
+                } else if (!node) {
+                  setAudioElement(null);
                 }
                 setAudioContext(ctx);
                 setSourceNode(source);
@@ -298,7 +346,6 @@ export default function Home(): React.JSX.Element {
               <span className="text-xs text-text-light font-bold">MEDIA LIBRARY</span>
             </div>
             
-            {/* PRESET STEUERUNG */}
             <div className="flex items-center justify-between gap-1 pt-0.5">
               <PresetSelector onPresetChange={handlePresetChange} />
               
@@ -310,11 +357,6 @@ export default function Home(): React.JSX.Element {
                       ? 'bg-purple-600 text-white border-purple-400'
                       : 'bg-black/40 text-gray-400 border-player-border hover:text-white'
                   }`}
-                  title={
-                    autoPresetEnabled
-                      ? 'Auto-Preset ist AKTIV (wechselt bei jedem Song)'
-                      : 'Auto-Preset ist INAKTIV (behält gewähltes Preset)'
-                  }
                 >
                   🎲 Auto {autoPresetEnabled ? 'ON' : 'OFF'}
                 </button>
@@ -332,7 +374,6 @@ export default function Home(): React.JSX.Element {
         </div>
       </div>
       
-      {/* MODALES FENSTER */}
       {isPlaylistOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center">
           <div className="bg-player-bg border-2 border-player-border rounded-lg shadow-2xl w-[90vw] h-[90vh] flex flex-col overflow-hidden">
@@ -343,7 +384,6 @@ export default function Home(): React.JSX.Element {
               <button
                 onClick={() => setIsPlaylistOpen(false)}
                 className="text-gray-400 hover:text-white text-sm px-2 py-0.5 border border-player-border rounded bg-player-bg transition"
-                title="Schließen (ESC)"
               >
                 ✕ Schließen
               </button>
@@ -366,7 +406,8 @@ export default function Home(): React.JSX.Element {
                 <Playlist
                   items={playlist}
                   currentIndex={currentIndex}
-                  onSelectTrack={(index) => setCurrentIndex(index)}
+                  playedIds={playedIds}
+                  onSelectTrack={handleSelectTrackFromPlaylist}
                   onRemoveTrack={handleRemoveFromPlaylist}
                   onClearPlaylist={handleClearPlaylist}
                 />

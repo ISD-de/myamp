@@ -11,78 +11,95 @@ export interface PlaylistItem {
 interface PlaylistProps {
   items: PlaylistItem[];
   currentIndex: number;
+  playedIds?: string[];
   onSelectTrack: (index: number) => void;
   onRemoveTrack: (id: string) => void;
   onClearPlaylist: () => void;
 }
 
-export const Playlist: React.FC<PlaylistProps> = ({
-                                                    items,
-                                                    currentIndex,
-                                                    onSelectTrack,
-                                                    onRemoveTrack,
-                                                    onClearPlaylist,
-                                                  }) => {
+export default function Playlist({
+                                   items,
+                                   currentIndex,
+                                   playedIds = [],
+                                   onSelectTrack,
+                                   onRemoveTrack,
+                                   onClearPlaylist,
+                                 }: PlaylistProps) {
   return (
-    <div className="border-player-border border-2 bg-player-bg flex flex-col h-full font-mono">
-      {/* Header */}
-      <div className="p-1.5 border-b border-player-border flex items-center justify-between bg-background/50 text-xs text-text-light">
-        <span className="font-bold">📋 PLAYLIST ({items.length})</span>
+    <div className="flex flex-col h-full bg-player-bg/90 border border-player-border p-2 rounded text-xs font-mono">
+      <div className="flex items-center justify-between border-b border-player-border/50 pb-2 mb-2">
+        <span className="font-bold text-text-light">
+          PLAYLIST ({items.length})
+          {playedIds.length > 0 && (
+            <span className="text-[10px] text-purple-400 font-normal ml-2">
+              ({playedIds.length}/{items.length} gespielt)
+            </span>
+          )}
+        </span>
         {items.length > 0 && (
           <button
             onClick={onClearPlaylist}
-            className="text-[10px] text-red-400 hover:text-red-300 border border-red-900/50 bg-red-950/30 px-1.5 py-0.5 rounded"
-            title="Playlist leeren"
+            className="text-red-400 hover:text-red-300 transition text-[10px] border border-red-900/50 px-1.5 py-0.5 rounded"
           >
-            🗑️ Alle löschen
+            Leeren
           </button>
         )}
       </div>
       
-      {/* Playlist Einträge */}
-      <div className="w-full flex-1 min-h-0 overflow-y-auto flex flex-col">
+      <div className="flex-1 overflow-y-auto space-y-1 pr-1">
         {items.length === 0 ? (
-          <div className="p-3 text-xs text-gray-500 text-center">
-            Playlist ist leer. Klicke auf Songs oder "+ Album", um Titel hinzuzufügen.
-          </div>
+          <div className="text-gray-500 italic text-center py-4">Playlist ist leer</div>
         ) : (
-          <ul className="flex flex-col">
-            {items.map((item, index) => {
-              const isActive = index === currentIndex;
-              return (
-                <li
-                  key={item.id}
-                  className={`text-xs p-1.5 border-b border-player-border/50 flex items-center justify-between gap-2 group transition-colors ${
-                    isActive
-                      ? 'bg-purple-950/60 text-[#00ffcc] font-bold border-l-2 border-l-[#00ffcc]'
-                      : 'text-text-light hover:bg-background-hover'
-                  }`}
+          items.map((item, index) => {
+            const isActive = index === currentIndex;
+            const isPlayed = playedIds.includes(item.id);
+            
+            // Ermittlung des passenden Symbols
+            let statusIcon: React.ReactNode = index + 1;
+            if (isActive && isPlayed) {
+              statusIcon = <span className="text-purple-400 font-bold">▶✓</span>;
+            } else if (isActive) {
+              statusIcon = <span className="text-green-400 font-bold">▶</span>;
+            } else if (isPlayed) {
+              statusIcon = <span className="text-gray-400 font-bold">✓</span>;
+            }
+            
+            return (
+              <div
+                key={item.id}
+                onClick={() => onSelectTrack(index)}
+                className={`flex items-center justify-between p-1.5 rounded cursor-pointer transition border ${
+                  isActive
+                    ? 'bg-purple-950/80 border-purple-500 text-white font-bold'
+                    : isPlayed
+                      ? 'bg-black/20 border-transparent text-gray-400 opacity-70 hover:opacity-100'
+                      : 'bg-black/40 border-player-border/30 text-gray-200 hover:bg-black/60'
+                }`}
+              >
+                <div className="flex items-center gap-2 overflow-hidden mr-2">
+                  <span className="text-[10px] w-6 flex justify-center text-gray-500 shrink-0">
+                    {statusIcon}
+                  </span>
+                  <span className="truncate" title={item.songName}>
+                    {item.songName}
+                  </span>
+                </div>
+                
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemoveTrack(item.id);
+                  }}
+                  className="text-gray-500 hover:text-red-400 p-0.5 text-xs transition shrink-0"
+                  title="Entfernen"
                 >
-                  {/* Track Info & Klick zum Abspielen */}
-                  <div
-                    onClick={() => onSelectTrack(index)}
-                    className="flex items-center gap-2 truncate cursor-pointer flex-1"
-                  >
-                    <span className="text-[10px] text-gray-500 w-4">{index + 1}.</span>
-                    <span className="truncate">{item.songName.replace('.mp3', '')}</span>
-                  </div>
-                  
-                  {/* Entfernen Button */}
-                  <button
-                    onClick={() => onRemoveTrack(item.id)}
-                    className="text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 px-1 text-xs transition-opacity"
-                    title="Von Playlist entfernen"
-                  >
-                    ✕
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+                  ✕
+                </button>
+              </div>
+            );
+          })
         )}
       </div>
     </div>
   );
-};
-
-export default Playlist;
+}
