@@ -326,7 +326,7 @@ export default function Home(): React.JSX.Element {
       {/* VISUALIZER BACKGROUND */}
       <div
         ref={visualizerContainerRef}
-        className="fixed inset-0 z-0 w-full h-full pointer-events-none"
+        className="fixed inset-0 z-0 w-full pointer-events-none"
       >
         {audioElement && audioContext && sourceNode && (
           <Visualizer

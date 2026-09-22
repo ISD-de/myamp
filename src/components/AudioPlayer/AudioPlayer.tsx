@@ -354,7 +354,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
       
       {/* EQUALIZER COLLAPSIBLE PANEL */}
       {showEq && (
-        <div className="p-2 border-t border-theme-border/40 bg-theme-bg/50">
+        <div className="border-t bg-theme-bg/50">
           <Equalizer
             audioContext={audioContextRef.current}
             sourceNode={sourceNodeRef.current}

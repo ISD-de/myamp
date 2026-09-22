@@ -145,7 +145,7 @@ export const Equalizer: React.FC<EqualizerProps> = ({
   };
   
   return (
-    <div className="bg-theme-panel border-2 border-theme-border -mt-2 p-3 w-full md:max-w-137.5 font-mono text-xs text-theme-text select-none transition-colors duration-300">
+    <div className="bg-theme-panel -mt-2 p-3 w-full md:max-w-137.5 font-mono text-xs text-theme-text select-none transition-colors duration-300">
       {/* HEADER CONTROLS */}
       <div className="flex items-center justify-between pb-3 mb-2 border-b border-theme-border/40">
         <div className="flex items-center gap-2">
