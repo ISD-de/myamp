@@ -89,7 +89,7 @@ export default function Home(): React.JSX.Element {
     }
   }, []);
   
-  // 2. SONG-TRACKING: Wird bei JEDEM Index-Wechsel zuverlässig ausgeführt
+  // 2. SONG-TRACKING
   useEffect(() => {
     if (!isLoaded || !currentItem) return;
     
@@ -229,7 +229,6 @@ export default function Home(): React.JSX.Element {
     });
   };
   
-  // NÄCHSTER SONG
   const handleNextSong = () => {
     if (playlist.length === 0) return;
     
@@ -242,7 +241,6 @@ export default function Home(): React.JSX.Element {
       (item) => !playedIds.includes(getSongUniqueId(item))
     );
     
-    // Falls alle Songs gespielt wurden: Historie zurücksetzen
     if (unplayedItems.length === 0) {
       const currentUniqueId = currentItem ? getSongUniqueId(currentItem) : null;
       unplayedItems = playlist.filter((item) => getSongUniqueId(item) !== currentUniqueId);
@@ -258,7 +256,7 @@ export default function Home(): React.JSX.Element {
     const newIdx = playlist.findIndex((item) => item.id === randomItem.id);
     
     if (newIdx !== -1) {
-      setCurrentIndex(newIdx); // Effekt 2 übernimmt automatisch das Hinzufügen zu playedIds
+      setCurrentIndex(newIdx);
     }
   };
   
@@ -307,14 +305,30 @@ export default function Home(): React.JSX.Element {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isPlaylistOpen]);
   
+  
+  
+  useEffect(() => {
+    console.log('--- Visualizer Props Status ---', {
+      audioElement: !!audioElement,
+      audioContext: !!audioContext,
+      sourceNode: !!sourceNode,
+      currentSong,
+    });
+  }, [audioElement, audioContext, sourceNode, currentSong]);
+  
   return (
     <main className="relative min-h-screen w-full bg-black font-mono overflow-hidden">
       <div
         ref={visualizerContainerRef}
         className="fixed inset-0 z-0 w-full h-full pointer-events-none"
       >
-        {audioElement && currentSong && (
-          <Visualizer ref={visualizerRef} audioElement={audioElement} />
+        {audioElement && audioContext && sourceNode && (
+          <Visualizer
+            ref={visualizerRef}
+            audioElement={audioElement}
+            audioContext={audioContext}
+            sourceNode={sourceNode}
+          />
         )}
       </div>
       
@@ -330,13 +344,12 @@ export default function Home(): React.JSX.Element {
               isShuffle={isShuffle}
               onToggleShuffle={handleToggleShuffle}
               onAudioElementReady={(node, ctx, source) => {
-                if (node && node !== audioElement) {
+                // Nur aktualisieren, wenn ECHTE Instanzen übergeben werden, niemals auf null zurücksetzen!
+                if (node && ctx && source) {
                   setAudioElement(node);
-                } else if (!node) {
-                  setAudioElement(null);
+                  setAudioContext(ctx);
+                  setSourceNode(source);
                 }
-                setAudioContext(ctx);
-                setSourceNode(source);
               }}
             />
           </div>

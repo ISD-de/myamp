@@ -26,7 +26,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                                                           onNextSong,
                                                           onPrevSong,
                                                           onOpenPlaylist,
-                                                          isShuffle,          // <-- GEFEHLT: Hier muss isShuffle aus den Props ausgepackt werden
+                                                          isShuffle,
                                                           onToggleShuffle
                                                         }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -46,15 +46,14 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const [volume, setVolume] = useState<number>(0.8);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   
-  // ENTFERNT: const [isShuffle, setIsShuffle] = useState<boolean>(false); <--- Das hat das Prop überdeckt!
-  
-  const [isRepeat, setIsRepeat] = useState<boolean>(false);
   const [bitrate, setBitrate] = useState<number | null>(null);
   const [sampleRate, setSampleRate] = useState<number | null>(null);
   const [isEqualizerOpen, setIsEqualizerOpen] = useState(false);
   
-  // Initialisierung AudioContext & SourceNode
+  // Initialisierung AudioContext & SourceNode - Einmalig pro Audio-Element
   const handleAudioRef = (node: HTMLAudioElement | null) => {
+    if (!node) return;
+    
     audioRef.current = node;
     
     if (node && !sourceNodeRef.current) {
@@ -110,6 +109,16 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     };
     
     fetchMetadata();
+  }, [audioSrc]);
+  
+  useEffect(() => {
+    if (audioRef.current && audioContextRef.current && sourceNodeRef.current) {
+      onAudioElementReady(
+        audioRef.current,
+        audioContextRef.current,
+        sourceNodeRef.current
+      );
+    }
   }, [audioSrc]);
   
   // Steuerungshandler
@@ -296,11 +305,11 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
               title={isShuffle ? 'Zufallswiedergabe (Shuffle ON)' : 'Reihenfolge (Shuffle OFF)'}
               className={`px-2 py-1 border text-xs font-bold rounded transition active:scale-95 cursor-pointer ${
                 isShuffle
-                  ? 'bg-neon-green text-black border-neon-green shadow-[0_0_8px_rgba(0,255,200,0.8)]'
-                  : 'bg-black/40 text-gray-300 border-player-border hover:text-white'
+                  ? 'bg-[#00ffcc] text-black border-[#00ffcc] shadow-[0_0_5px_#00ffcc]'
+                  : 'bg-[#222429] text-[#777] border-[#444]'
               }`}
             >
-              {isShuffle ? 'MIX'  : '123'}
+              {isShuffle ? 'MIX' : '123'}
             </button>
           </div>
         </div>
@@ -318,7 +327,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
         />
       </div>
       <div className={isEqualizerOpen ? 'visible' : 'hidden'}>
-        <Equalizer audioContext={audioContext} sourceNode={sourceNode}/>
+        <Equalizer audioContext={audioContext} sourceNode={sourceNode} />
       </div>
     </div>
   );
