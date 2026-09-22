@@ -247,7 +247,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
               disabled={!audioSrc}
               className="px-3 py-1 bg-theme-accent text-white border border-theme-border font-bold text-xs rounded-sm transition active:scale-95 disabled:opacity-40 cursor-pointer"
             >
-              {isPlaying ? 'PAUSE' : 'PLAY'}
+              {isPlaying ? '▶' : '❚❚'}
             </button>
             
             <button
@@ -270,7 +270,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                 }`}
                 title="Shuffle An/Aus"
               >
-                🔀
+                {isShuffle ? '312' : '123'}
               </button>
             )}
             
@@ -281,7 +281,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                 className="ml-1 px-2 py-1 bg-theme-bg text-theme-text border border-theme-border/70 hover:bg-theme-accent/20 rounded-sm text-[10px] font-bold transition active:scale-95 cursor-pointer"
                 title="Playlist öffnen"
               >
-                📋 Playlist
+                ≡♪
               </button>
             )}
           </div>
