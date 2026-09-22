@@ -36,11 +36,14 @@ export default function Home(): React.JSX.Element {
   const visualizerRef = useRef<VisualizerRef | null>(null);
   const visualizerContainerRef = useRef<HTMLDivElement | null>(null);
   
-  const currentItem = currentIndex >= 0 && currentIndex < playlist.length ? playlist[currentIndex] : null;
+  const currentItem =
+    currentIndex >= 0 && currentIndex < playlist.length ? playlist[currentIndex] : null;
   const currentSong = currentItem ? currentItem.songName : null;
   
   const audioSrc = currentItem
-    ? `/api/stream?folder=${encodeURIComponent(currentItem.folderName)}&song=${encodeURIComponent(currentItem.songName)}`
+    ? `/api/stream?folder=${encodeURIComponent(
+      currentItem.folderName
+    )}&song=${encodeURIComponent(currentItem.songName)}`
     : null;
   
   const getSongUniqueId = (item: { folderName: string; songName: string }) => {
@@ -137,6 +140,7 @@ export default function Home(): React.JSX.Element {
     }
   }, [shouldAutoPlay, audioElement, audioSrc, audioContext]);
   
+  // 5. AUTO VISUALIZER PRESET BEI SONGWECHSEL
   useEffect(() => {
     if (currentSong && autoPresetEnabled && visualizerRef.current) {
       visualizerRef.current.loadRandomPreset(2.0);
@@ -230,35 +234,44 @@ export default function Home(): React.JSX.Element {
     });
   };
   
+  // AUTOMATISCHER & MANUELLER NÄCHSTER SONG
   const handleNextSong = () => {
     if (playlist.length === 0) return;
     
-    if (!isShuffle) {
-      setCurrentIndex((prev) => (prev + 1 < playlist.length ? prev + 1 : 0));
-      return;
-    }
-    
-    let unplayedItems = playlist.filter(
-      (item) => !playedIds.includes(getSongUniqueId(item))
-    );
-    
-    if (unplayedItems.length === 0) {
-      const currentUniqueId = currentItem ? getSongUniqueId(currentItem) : null;
-      unplayedItems = playlist.filter((item) => getSongUniqueId(item) !== currentUniqueId);
+    setCurrentIndex((prevIdx) => {
+      if (!isShuffle) {
+        // Lineares Abspielen (Loop am Ende der Playlist wieder zu Song 1)
+        return (prevIdx + 1) % playlist.length;
+      }
       
-      if (unplayedItems.length === 0) unplayedItems = playlist;
+      // Shuffle Mode: Nicht gespielte Tracks herausfiltern
+      let unplayedItems = playlist.filter(
+        (item) => !playedIds.includes(getSongUniqueId(item))
+      );
       
-      const resetIds = currentUniqueId ? [currentUniqueId] : [];
-      setPlayedIds(resetIds);
-      localStorage.setItem(PLAYED_IDS_CACHE_KEY, JSON.stringify(resetIds));
-    }
-    
-    const randomItem = unplayedItems[Math.floor(Math.random() * unplayedItems.length)];
-    const newIdx = playlist.findIndex((item) => item.id === randomItem.id);
-    
-    if (newIdx !== -1) {
-      setCurrentIndex(newIdx);
-    }
+      if (unplayedItems.length === 0) {
+        const currentUniqueId =
+          prevIdx >= 0 && prevIdx < playlist.length
+            ? getSongUniqueId(playlist[prevIdx])
+            : null;
+        
+        unplayedItems = playlist.filter(
+          (item) => getSongUniqueId(item) !== currentUniqueId
+        );
+        
+        if (unplayedItems.length === 0) unplayedItems = playlist;
+        
+        const resetIds = currentUniqueId ? [currentUniqueId] : [];
+        setPlayedIds(resetIds);
+        localStorage.setItem(PLAYED_IDS_CACHE_KEY, JSON.stringify(resetIds));
+      }
+      
+      const randomItem =
+        unplayedItems[Math.floor(Math.random() * unplayedItems.length)];
+      const newIdx = playlist.findIndex((item) => item.id === randomItem.id);
+      
+      return newIdx !== -1 ? newIdx : 0;
+    });
   };
   
   const handlePrevSong = () => {
@@ -326,19 +339,29 @@ export default function Home(): React.JSX.Element {
       {/* FLOATING PLAYER & CONTROL PANELS */}
       <div className="relative z-10 p-2 flex flex-col gap-2 pointer-events-auto">
         <div className="w-full md:w-125 flex flex-col gap-1.5">
-          
           {/* MAIN PLAYER CONTAINER */}
           <div className="bg-theme-panel/90 backdrop-blur-md border-2 border-theme-border shadow-2xl transition-colors duration-300">
             <AudioPlayer
               audioSrc={audioSrc}
               currentSong={currentSong}
-              onNextSong={handleNextSong}
-              onPrevSong={handlePrevSong}
+              /* Garantiert immer eine Funktion übergeben, solange die Playlist nicht leer ist */
+              onNextSong={playlist.length > 0 ? handleNextSong : undefined}
+              onPrevSong={playlist.length > 0 ? handlePrevSong : undefined}
               onOpenPlaylist={() => setIsPlaylistOpen(true)}
               isShuffle={isShuffle}
               onToggleShuffle={handleToggleShuffle}
               onAudioElementReady={(node, ctx, source) => {
                 if (node && ctx && source) {
+                  try {
+                    source.connect(ctx.destination);
+                  } catch (e) {
+                    // Ignorieren falls bereits verbunden
+                  }
+                  
+                  if (ctx.state === 'suspended') {
+                    ctx.resume();
+                  }
+                  
                   setAudioElement(node);
                   setAudioContext(ctx);
                   setSourceNode(source);
@@ -368,7 +391,7 @@ export default function Home(): React.JSX.Element {
                   onClick={() => setAutoPresetEnabled((prev) => !prev)}
                   className={`text-xs font-semibold px-2 py-1 rounded border transition active:scale-95 whitespace-nowrap cursor-pointer ${
                     autoPresetEnabled
-                      ? 'bg-theme-accent text-white border-theme-glow shadow-sm'
+                      ? 'bg-theme-accent text-white border-theme-border shadow-sm'
                       : 'bg-black/40 text-theme-muted border-theme-border hover:text-theme-text'
                   }`}
                 >
