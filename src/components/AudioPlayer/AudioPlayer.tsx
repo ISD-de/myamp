@@ -191,12 +191,24 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           if (audioRef.current) setDuration(audioRef.current.duration);
         }}
         onError={(e) => {
-          alert("Fehler beim Laden des Tracks (Playlist-Eintrag defekt)");
-          console.warn("Fehler beim Laden des Tracks (Playlist-Eintrag defekt)", e);
-          // Automatisches Weiterschalten zum nächsten Song bei Ladefehler
-          // if (onNextSong) {
-          //   onNextSong();
-          // }
+          const audioElement = e.currentTarget;
+          const errorCode = audioElement.error?.code;
+          
+          // Fehlercode 1 = MEDIA_ERR_ABORTED (Wird ausgelöst, wenn ein Track während des Ladens gewechselt wird)
+          // Das ist kein echter Fehler, sondern normal bei schnellem Skip!
+          if (errorCode === 1) {
+            return;
+          }
+          
+          console.warn("Fehler beim Laden des Tracks:", {
+            code: errorCode,
+            message: audioElement.error?.message,
+            event: e
+          });
+          
+          if (onNextSongRef.current) {
+            onNextSongRef.current();
+          }
         }}
         onEnded={handleEnded}
         crossOrigin="anonymous"
