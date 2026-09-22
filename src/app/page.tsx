@@ -18,6 +18,10 @@ export default function Home(): React.JSX.Element {
   // Auto Preset Toggle State
   const [autoPresetEnabled, setAutoPresetEnabled] = useState<boolean>(true);
   
+  // Shuffle State & Historie bereits abgespielter Songs
+  const [isShuffle, setIsShuffle] = useState<boolean>(false);
+  const [playedIndices, setPlayedIndices] = useState<number[]>([]);
+  
   // States & Refs für die Playlist
   const [playlist, setPlaylist] = useState<PlaylistItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(-1);
@@ -75,7 +79,6 @@ export default function Home(): React.JSX.Element {
   // 2. AUTOSTART TRIGGER: Startet das Audio, sobald das Element bereit ist
   useEffect(() => {
     if (shouldAutoPlay && audioElement && audioSrc) {
-      // AudioContext reaktivieren (falls vom Browser pausiert)
       if (audioContext && audioContext.state === 'suspended') {
         audioContext.resume();
       }
@@ -83,7 +86,7 @@ export default function Home(): React.JSX.Element {
       audioElement
         .play()
         .then(() => {
-          setShouldAutoPlay(false); // Autostart erfolgreich ausgeführt
+          setShouldAutoPlay(false);
         })
         .catch((err) => {
           console.warn('Autoplay von Browser blockiert (Nutzerinteraktion erforderlich):', err);
@@ -170,13 +173,49 @@ export default function Home(): React.JSX.Element {
   const handleClearPlaylist = () => {
     setPlaylist([]);
     setCurrentIndex(-1);
+    setPlayedIndices([]);
     localStorage.removeItem(PLAYLIST_CACHE_KEY);
     localStorage.removeItem(CURRENT_INDEX_CACHE_KEY);
   };
   
+  // Umschalten zwischen Sequentiell & Shuffle
+  const handleToggleShuffle = () => {
+    setIsShuffle((prev) => !prev);
+    setPlayedIndices([]);
+  };
+  
+  // Nächsten Song abspielen (mit Shuffle-Prüfung ohne doppelte Songs)
   const handleNextSong = () => {
     if (playlist.length === 0) return;
-    setCurrentIndex((prev) => (prev + 1 < playlist.length ? prev + 1 : 0));
+    
+    if (!isShuffle) {
+      // Normale Abspielfolge (1->2->3...)
+      setCurrentIndex((prev) => (prev + 1 < playlist.length ? prev + 1 : 0));
+      return;
+    }
+    
+    // --- SHUFFLE LOGIK ---
+    const updatedPlayed = playedIndices.includes(currentIndex)
+      ? playedIndices
+      : [...playedIndices, currentIndex];
+    
+    let unplayedIndices = playlist
+      .map((_, idx) => idx)
+      .filter((idx) => !updatedPlayed.includes(idx));
+    
+    // Falls alle Songs gespielt wurden: Historie zurücksetzen
+    if (unplayedIndices.length === 0) {
+      unplayedIndices = playlist
+        .map((_, idx) => idx)
+        .filter((idx) => idx !== currentIndex);
+      setPlayedIndices([]);
+    } else {
+      setPlayedIndices(updatedPlayed);
+    }
+    
+    // Zufälligen Track aus den verbleibenden wählen
+    const randomIndex = Math.floor(Math.random() * unplayedIndices.length);
+    setCurrentIndex(unplayedIndices[randomIndex]);
   };
   
   const handlePrevSong = () => {
@@ -242,6 +281,8 @@ export default function Home(): React.JSX.Element {
               onNextSong={handleNextSong}
               onPrevSong={handlePrevSong}
               onOpenPlaylist={() => setIsPlaylistOpen(true)}
+              isShuffle={isShuffle}
+              onToggleShuffle={handleToggleShuffle}
               onAudioElementReady={(node, ctx, source) => {
                 if (node && node !== audioElement) {
                   setAudioElement(node);
@@ -253,14 +294,8 @@ export default function Home(): React.JSX.Element {
           </div>
           
           <div className="flex flex-col gap-1 border-2 border-player-border bg-player-bg/90 backdrop-blur-md p-1 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-player-border/50 pb-1">
+            <div className="border-b border-player-border/50 pb-1">
               <span className="text-xs text-text-light font-bold">MEDIA LIBRARY</span>
-              <button
-                onClick={() => setIsPlaylistOpen(true)}
-                className="text-xs bg-purple-900/80 hover:bg-purple-700 text-white font-semibold px-3 py-1 rounded border border-purple-500/50 transition active:scale-95 flex items-center gap-1.5"
-              >
-                <span>📂</span> Explorer & Playlist {playlist.length > 0 && `(${playlist.length})`}
-              </button>
             </div>
             
             {/* PRESET STEUERUNG */}

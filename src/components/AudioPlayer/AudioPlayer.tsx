@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useEffect, useRef, useState} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Equalizer from '@/components/AudioPlayer/Equalizer';
 import * as musicMetadata from 'music-metadata-browser';
 
@@ -24,7 +24,10 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                                                           currentSong,
                                                           onAudioElementReady,
                                                           onNextSong,
-                                                          onPrevSong,onOpenPlaylist
+                                                          onPrevSong,
+                                                          onOpenPlaylist,
+                                                          isShuffle,          // <-- GEFEHLT: Hier muss isShuffle aus den Props ausgepackt werden
+                                                          onToggleShuffle
                                                         }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
@@ -42,11 +45,13 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const [duration, setDuration] = useState<number>(0);
   const [volume, setVolume] = useState<number>(0.8);
   const [isMuted, setIsMuted] = useState<boolean>(false);
-  const [isShuffle, setIsShuffle] = useState<boolean>(false);
+  
+  // ENTFERNT: const [isShuffle, setIsShuffle] = useState<boolean>(false); <--- Das hat das Prop überdeckt!
+  
   const [isRepeat, setIsRepeat] = useState<boolean>(false);
   const [bitrate, setBitrate] = useState<number | null>(null);
   const [sampleRate, setSampleRate] = useState<number | null>(null);
-  const [isEqualizerOpen, setIsEqualizerOpen] = useState(false)
+  const [isEqualizerOpen, setIsEqualizerOpen] = useState(false);
   
   // Initialisierung AudioContext & SourceNode
   const handleAudioRef = (node: HTMLAudioElement | null) => {
@@ -91,15 +96,12 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     
     const fetchMetadata = async () => {
       try {
-        // Metadaten direkt aus der MP3-URL parsen
         const metadata = await musicMetadata.fetchFromUrl(audioSrc);
         
         if (metadata.format.bitrate) {
-          // Bitrate von bps in kbps umrechnen (z.B. 320000 -> 320)
           setBitrate(Math.round(metadata.format.bitrate / 1000));
         }
         if (metadata.format.sampleRate) {
-          // SampleRate in kHz umrechnen (z.B. 44100 -> 44)
           setSampleRate(Math.round(metadata.format.sampleRate / 1000));
         }
       } catch (err) {
@@ -169,15 +171,13 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   return (
     <div className="flex flex-col gap-1 ">
       <div className="bg-player-bg border-2 border-player-border p-2 font-mono select-none text-text">
-        <div
-          className="bg-black border border-player-border p-2 flex flex-col justify-between h-17 relative overflow-hidden">
+        <div className="bg-black border border-player-border p-2 flex flex-col justify-between h-17 relative overflow-hidden">
           <div className="flex items-center justify-between text-xs text-player-text-muted font-bold tracking-tight">
             <div className="flex flex-col gap-0.5 text-[8px] text-player-text-disabled leading-none">
               <span className={isPlaying ? 'text-player-text-highlight' : ''}>▲ PLAY</span>
               <span className={!isPlaying && currentTime > 0 ? 'text-player-text-highlight' : ''}>❚❚ PAUSE</span>
             </div>
-            <div
-              className="flex-1 ml-3 overflow-hidden whitespace-nowrap text-ellipsis text-right text-player-text-highlight font-mono">
+            <div className="flex-1 ml-3 overflow-hidden whitespace-nowrap text-ellipsis text-right text-player-text-highlight font-mono">
               {currentSong ? currentSong.replace('.mp3', '') : 'WINAMP: NO FILE LOADED'}
             </div>
           </div>
@@ -194,7 +194,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
               <span className="text-player-text-highlight">STEREO</span>
             </div>
           </div>
-          <div className="">
+          <div>
             <input
               type="range"
               min="0"
@@ -291,24 +291,16 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
               EQ
             </button>
             <button
-              onClick={() => setIsShuffle(!isShuffle)}
-              className={`px-1.5 h-7 text-[9px] font-bold border rounded ${
+              type="button"
+              onClick={onToggleShuffle}
+              title={isShuffle ? 'Zufallswiedergabe (Shuffle ON)' : 'Reihenfolge (Shuffle OFF)'}
+              className={`px-2 py-1 border text-xs font-bold rounded transition active:scale-95 cursor-pointer ${
                 isShuffle
-                  ? 'bg-[#00ffcc] text-black border-[#00ffcc] shadow-[0_0_5px_#00ffcc]'
-                  : 'bg-[#222429] text-[#777] border-[#444]'
+                  ? 'bg-neon-green text-black border-neon-green shadow-[0_0_8px_rgba(0,255,200,0.8)]'
+                  : 'bg-black/40 text-gray-300 border-player-border hover:text-white'
               }`}
             >
-              123
-            </button>
-            <button
-              onClick={() => setIsRepeat(!isRepeat)}
-              className={`px-1.5 h-7 text-[12px] font-bold border rounded ${
-                isRepeat
-                  ? 'bg-[#00ffcc] text-black border-[#00ffcc] shadow-[0_0_5px_#00ffcc]'
-                  : 'bg-[#222429] text-[#777] border-[#444]'
-              }`}
-            >
-              🔁
+              {isShuffle ? 'MIX'  : '123'}
             </button>
           </div>
         </div>
@@ -325,8 +317,8 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           className="hidden"
         />
       </div>
-      <div className={isEqualizerOpen ? 'visible':'hidden'}>
-      <Equalizer audioContext={audioContext} sourceNode={sourceNode}/>
+      <div className={isEqualizerOpen ? 'visible' : 'hidden'}>
+        <Equalizer audioContext={audioContext} sourceNode={sourceNode}/>
       </div>
     </div>
   );

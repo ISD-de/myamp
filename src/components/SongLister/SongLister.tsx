@@ -154,7 +154,7 @@ export const SongLister = ({
   if (!folderName) {
     return (
       <div className="w-full h-fit p-3 text-xs text-text-light border border-player-border bg-player-bg font-mono">
-        Bitte wähle einen Ordner aus.
+        Bitte wähle eine Album aus.
       </div>
     );
   }
