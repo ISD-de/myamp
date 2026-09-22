@@ -7,6 +7,7 @@ import { getSongs } from '@/actions/getSongs';
 interface SongListerProps {
   folderName: string | null;
   onSelectSong?: (songName: string) => void;
+  onAddAlbumToPlaylist?: (songs: string[]) => void;
 }
 
 interface SongMetadata {
@@ -17,7 +18,11 @@ interface SongMetadata {
   bitrate?: number;
 }
 
-export const SongLister = ({ folderName, onSelectSong }: SongListerProps) => {
+export const SongLister = ({
+                             folderName,
+                             onSelectSong,
+                             onAddAlbumToPlaylist,
+                           }: SongListerProps) => {
   const [songs, setSongs] = useState<string[]>([]);
   const [metadataMap, setMetadataMap] = useState<Record<string, SongMetadata>>({});
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -87,7 +92,9 @@ export const SongLister = ({ folderName, onSelectSong }: SongListerProps) => {
     songs.forEach(async (song) => {
       if (metadataMap[song]) return; // Bereits geparst
       
-      const audioUrl = `/api/stream?folder=${encodeURIComponent(folderName)}&song=${encodeURIComponent(song)}`;
+      const audioUrl = `/api/stream?folder=${encodeURIComponent(
+        folderName
+      )}&song=${encodeURIComponent(song)}`;
       
       try {
         const metadata = await musicMetadata.fetchFromUrl(audioUrl);
@@ -96,7 +103,9 @@ export const SongLister = ({ folderName, onSelectSong }: SongListerProps) => {
           artist: metadata.common.artist,
           album: metadata.common.album,
           duration: metadata.format.duration,
-          bitrate: metadata.format.bitrate ? Math.round(metadata.format.bitrate / 1000) : undefined,
+          bitrate: metadata.format.bitrate
+            ? Math.round(metadata.format.bitrate / 1000)
+            : undefined,
         };
         
         setMetadataMap((prev) => {
@@ -113,6 +122,14 @@ export const SongLister = ({ folderName, onSelectSong }: SongListerProps) => {
   const handleSongClick = (song: string) => {
     if (onSelectSong) {
       onSelectSong(song);
+    }
+  };
+  
+  const handleAddAlbumClick = () => {
+    if (onAddAlbumToPlaylist && songs.length > 0) {
+      // Wenn gefiltert wird, werden nur die gefilterten Songs hinzugefügt, sonst alle
+      const songsToAdd = searchTerm ? filteredSongs : songs;
+      onAddAlbumToPlaylist(songsToAdd);
     }
   };
   
@@ -143,24 +160,37 @@ export const SongLister = ({ folderName, onSelectSong }: SongListerProps) => {
   }
   
   return (
-    <div className="border-player-border border-2 bg-player-bg flex flex-col gap-1 font-mono">
-      {/* Such-Header mit Filterung */}
-      <div className="p-1.5 border-b border-player-border flex items-center gap-2 bg-background/50">
-        <input
-          type="text"
-          placeholder="Songs, Titel oder Interpret suchen..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          disabled={loading || !!error}
-          className="w-full bg-player-bg text-text-light text-xs px-2 py-1 border border-player-border rounded focus:outline-none focus:border-purple-500 placeholder:text-gray-500 disabled:opacity-50"
-        />
-        {searchTerm && (
+    <div className="border-player-border border-2 bg-player-bg flex flex-col gap-1 font-mono h-full">
+      {/* Such-Header mit Filterung & Album-Button */}
+      <div className="p-1.5 border-b border-player-border flex items-center gap-1.5 bg-background/50">
+        <div className="relative flex-1 flex items-center">
+          <input
+            type="text"
+            placeholder="Songs, Titel oder Interpret suchen..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            disabled={loading || !!error}
+            className="w-full bg-player-bg text-text-light text-xs px-2 py-1 pr-6 border border-player-border rounded focus:outline-none focus:border-purple-500 placeholder:text-gray-500 disabled:opacity-50"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-1 text-xs text-gray-400 hover:text-white px-1"
+              title="Suche zurücksetzen"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+        
+        {/* Button: Ganzes Album / gefilterte Liste zur Playlist hinzufügen */}
+        {songs.length > 0 && onAddAlbumToPlaylist && (
           <button
-            onClick={() => setSearchTerm('')}
-            className="text-xs text-gray-400 hover:text-white px-1.5 py-0.5 border border-player-border rounded bg-player-bg"
-            title="Suche zurücksetzen"
+            onClick={handleAddAlbumClick}
+            className="text-[10px] bg-purple-900/40 hover:bg-purple-800/60 text-purple-200 border border-purple-700/50 px-2 py-1 rounded whitespace-nowrap active:scale-95 transition-all shrink-0"
+            title="Ganze Liste zur Playlist hinzufügen"
           >
-            ✕
+            + Album ({filteredSongs.length})
           </button>
         )}
       </div>
