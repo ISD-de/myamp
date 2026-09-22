@@ -41,7 +41,7 @@ export default function Playlist({
         {items.length > 0 && (
           <button
             onClick={onClearPlaylist}
-            className="text-red-400 hover:text-red-300 transition text-[10px] border border-red-900/60 bg-red-950/40 px-1.5 py-0.5 rounded-sm active:scale-95 cursor-pointer"
+            className="text-red-400 hover:text-red-300 transition text-[10px] border border-red-900/60 bg-red-950/40 px-1.5 py-0.5 active:scale-95 cursor-pointer"
           >
             Leeren
           </button>
@@ -73,7 +73,7 @@ export default function Playlist({
               <div
                 key={item.id}
                 onClick={() => onSelectTrack(index)}
-                className={`flex items-center justify-between p-1.5 rounded-sm cursor-pointer transition border ${
+                className={`flex items-center justify-between p-1.5 cursor-pointer transition border ${
                   isActive
                     ? 'bg-theme-accent/30 border-theme-border text-white font-bold'
                     : isPlayed

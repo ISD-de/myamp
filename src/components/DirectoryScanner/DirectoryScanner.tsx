@@ -83,12 +83,12 @@ export const FolderLister = ({ onSelectFolder }: FolderListerProps) => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           disabled={loading || !!error}
-          className="w-full bg-theme-bg text-theme-text text-xs px-2 py-1 border border-theme-border/60 focus:border-theme-border focus:outline-none placeholder:text-theme-muted/50 disabled:opacity-50 rounded-sm"
+          className="w-full bg-theme-bg text-theme-text text-xs px-2 py-1 border border-theme-border/60 focus:border-theme-border focus:outline-none placeholder:text-theme-muted/50 disabled:opacity-50"
         />
         {searchTerm && (
           <button
             onClick={() => setSearchTerm('')}
-            className="text-xs text-theme-muted hover:text-theme-text px-1.5 py-0.5 border border-theme-border bg-theme-bg rounded-sm transition active:scale-95 cursor-pointer"
+            className="text-xs text-theme-muted hover:text-theme-text px-1.5 py-0.5 border border-theme-border bg-theme-bg transition active:scale-95 cursor-pointer"
             title="Suche zurücksetzen"
           >
             ✕

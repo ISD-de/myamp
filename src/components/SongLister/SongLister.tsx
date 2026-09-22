@@ -169,7 +169,7 @@ export const SongLister = ({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             disabled={loading || !!error}
-            className="w-full bg-theme-bg text-theme-text text-xs px-2 py-1 pr-6 border border-theme-border/60 rounded-sm focus:outline-none focus:border-theme-border placeholder:text-theme-muted/50 disabled:opacity-50"
+            className="w-full bg-theme-bg text-theme-text text-xs px-2 py-1 pr-6 border border-theme-border/60 focus:outline-none focus:border-theme-border placeholder:text-theme-muted/50 disabled:opacity-50"
           />
           {searchTerm && (
             <button
@@ -186,7 +186,7 @@ export const SongLister = ({
         {songs.length > 0 && onAddAlbumToPlaylist && (
           <button
             onClick={handleAddAlbumClick}
-            className="text-[10px] bg-theme-accent/20 hover:bg-theme-accent/40 text-theme-text border border-theme-border/70 px-2 py-1 rounded-sm whitespace-nowrap active:scale-95 transition-all shrink-0 cursor-pointer font-bold"
+            className="text-[10px] bg-theme-accent/20 hover:bg-theme-accent/40 text-theme-text border border-theme-border/70 px-2 py-1 whitespace-nowrap active:scale-95 transition-all shrink-0 cursor-pointer font-bold"
             title="Ganze Liste zur Playlist hinzufügen"
           >
             + Album ({filteredSongs.length})
@@ -243,7 +243,7 @@ export const SongLister = ({
                         {/* METADATEN (BITRATE & SPIELZEIT) */}
                         <div className="flex items-center gap-2 text-[10px] text-theme-muted shrink-0">
                           {meta?.bitrate && (
-                            <span className="bg-theme-bg text-theme-border px-1 py-0.5 rounded border border-theme-border/50 font-mono">
+                            <span className="bg-theme-bg text-theme-border px-1 py-0.5 border border-theme-border/50 font-mono">
                               {meta.bitrate} kbps
                             </span>
                           )}

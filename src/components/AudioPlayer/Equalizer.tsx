@@ -152,7 +152,7 @@ export const Equalizer: React.FC<EqualizerProps> = ({
           {/* ON BUTTON (Aktiviert das aktuelle Preset) */}
           <button
             onClick={() => toggleFlatMode(false)}
-            className={`px-2.5 py-0.5 rounded border text-[10px] font-bold transition active:scale-95 cursor-pointer ${
+            className={`px-2.5 py-0.5 border text-[10px] font-bold transition active:scale-95 cursor-pointer ${
               !isFlat
                 ? 'bg-theme-accent text-white border-theme-border shadow-sm'
                 : 'bg-theme-bg text-theme-muted/60 border-theme-border/40 hover:text-theme-text'
@@ -164,7 +164,7 @@ export const Equalizer: React.FC<EqualizerProps> = ({
           {/* FLAT BUTTON (Setzt den Filter-Effekt neutral auf 0 dB) */}
           <button
             onClick={() => toggleFlatMode(true)}
-            className={`px-2.5 py-0.5 rounded border text-[10px] font-bold transition active:scale-95 cursor-pointer ${
+            className={`px-2.5 py-0.5 border text-[10px] font-bold transition active:scale-95 cursor-pointer ${
               isFlat
                 ? 'bg-theme-accent text-white border-theme-border shadow-sm'
                 : 'bg-theme-bg text-theme-muted/60 border-theme-border/40 hover:text-theme-text'

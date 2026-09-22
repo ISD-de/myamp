@@ -11,6 +11,8 @@ interface AudioPlayerProps {
   onOpenPlaylist?: () => void;
   isShuffle?: boolean;
   onToggleShuffle?: () => void;
+  showVisualizerSettings?: boolean;
+  onToggleVisualizerSettings?: () => void;
   onAudioElementReady?: (
     element: HTMLAudioElement,
     context: AudioContext,
@@ -26,6 +28,8 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                                                           onOpenPlaylist,
                                                           isShuffle = false,
                                                           onToggleShuffle,
+                                                          showVisualizerSettings = false,
+                                                          onToggleVisualizerSettings,
                                                           onAudioElementReady,
                                                         }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -187,7 +191,8 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           if (audioRef.current) setDuration(audioRef.current.duration);
         }}
         onError={(e) => {
-          alert(`Fehler beim Laden des Tracks (Playlist-Eintrag defekt):${e}`);
+          alert("Fehler beim Laden des Tracks (Playlist-Eintrag defekt)");
+          console.warn("Fehler beim Laden des Tracks (Playlist-Eintrag defekt)", e);
           // Automatisches Weiterschalten zum nächsten Song bei Ladefehler
           // if (onNextSong) {
           //   onNextSong();
@@ -200,7 +205,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
       {/* MAIN AUDIO PLAYER BOARD */}
       <div className="p-3 w-full transition-colors duration-300">
         {/* SONG DISPLAY / HEADER */}
-        <div className="bg-theme-bg/80 border border-theme-border/60 p-2 mb-3 rounded-sm flex flex-col gap-1">
+        <div className="bg-theme-bg/80 border border-theme-border/60 p-2 mb-3 flex flex-col gap-1">
           <div className="flex justify-between items-center text-[10px] text-theme-muted">
             <span>TRACK PLAYER</span>
             <span className="font-bold text-theme-border">
@@ -221,7 +226,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             value={currentTime}
             onChange={handleSeek}
             disabled={!audioSrc}
-            className="w-full h-2 bg-theme-bg rounded-sm appearance-none cursor-pointer accent-theme-accent disabled:opacity-30"
+            className="w-full h-2 bg-theme-bg appearance-none cursor-pointer accent-theme-accent disabled:opacity-30"
           />
           <div className="flex justify-between text-[10px] text-theme-muted font-bold">
             <span>{formatTime(currentTime)}</span>
@@ -236,7 +241,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             <button
               onClick={onPrevSong}
               disabled={!onPrevSong}
-              className="px-2 py-1 bg-theme-bg border border-theme-border/70 hover:bg-theme-accent/20 rounded-sm text-xs font-bold transition active:scale-95 disabled:opacity-40 cursor-pointer"
+              className="px-2 py-1 bg-theme-bg border border-theme-border/70 hover:bg-theme-accent/20 text-xs font-bold transition active:scale-95 disabled:opacity-40 cursor-pointer"
               title="Vorheriger Song"
             >
               ⏮
@@ -245,7 +250,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             <button
               onClick={togglePlay}
               disabled={!audioSrc}
-              className="px-3 py-1 bg-theme-accent text-white border border-theme-border font-bold text-xs rounded-sm transition active:scale-95 disabled:opacity-40 cursor-pointer"
+              className="px-3 py-1 bg-theme-accent text-white border border-theme-border font-bold text-xs transition active:scale-95 disabled:opacity-40 cursor-pointer"
             >
               {isPlaying ? '▶' : '❚❚'}
             </button>
@@ -253,7 +258,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             <button
               onClick={onNextSong}
               disabled={!onNextSong}
-              className="px-2 py-1 bg-theme-bg border border-theme-border/70 hover:bg-theme-accent/20 rounded-sm text-xs font-bold transition active:scale-95 disabled:opacity-40 cursor-pointer"
+              className="px-2 py-1 bg-theme-bg border border-theme-border/70 hover:bg-theme-accent/20 text-xs font-bold transition active:scale-95 disabled:opacity-40 cursor-pointer"
               title="Nächster Song"
             >
               ⏭
@@ -263,7 +268,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             {onToggleShuffle && (
               <button
                 onClick={onToggleShuffle}
-                className={`ml-1 px-2 py-1 text-[10px] font-bold border rounded-sm transition cursor-pointer active:scale-95 ${
+                className={`ml-1 px-2 py-1 text-[10px] font-bold border transition cursor-pointer active:scale-95 ${
                   isShuffle
                     ? 'bg-theme-accent text-white border-theme-border'
                     : 'bg-theme-bg text-theme-muted border-theme-border/50'
@@ -278,17 +283,32 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             {onOpenPlaylist && (
               <button
                 onClick={onOpenPlaylist}
-                className="ml-1 px-2 py-1 bg-theme-bg text-theme-text border border-theme-border/70 hover:bg-theme-accent/20 rounded-sm text-[10px] font-bold transition active:scale-95 cursor-pointer"
+                className="ml-1 px-2 py-1 bg-theme-bg text-theme-text border border-theme-border/70 hover:bg-theme-accent/20 text-[10px] font-bold transition active:scale-95 cursor-pointer"
                 title="Playlist öffnen"
               >
                 ≡♪
+              </button>
+            )}
+            
+            {/* VISUALIZATION TOGGLE BUTTON */}
+            {onToggleVisualizerSettings && (
+              <button
+                onClick={onToggleVisualizerSettings}
+                className={`ml-1 px-2 py-1 text-[10px] font-bold border transition cursor-pointer active:scale-95 ${
+                  showVisualizerSettings
+                    ? 'bg-theme-accent text-white border-theme-border'
+                    : 'bg-theme-bg text-theme-text border-theme-border/70 hover:bg-theme-accent/20'
+                }`}
+                title="Visualizer Einstellungen"
+              >
+                📊
               </button>
             )}
           </div>
           
           {/* VOLUME & EQ TOGGLE */}
           <div className="flex items-center gap-1.5">
-            <div className="flex items-center gap-1 bg-theme-bg border border-theme-border/50 px-1.5 py-0.5 rounded-sm">
+            <div className="flex items-center gap-1 bg-theme-bg border border-theme-border/50 px-1.5 py-0.5">
               <button
                 onClick={toggleMute}
                 className="text-[10px] text-theme-muted hover:text-theme-text cursor-pointer"
@@ -308,7 +328,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             
             <button
               onClick={() => setShowEq(!showEq)}
-              className={`px-1.5 py-0.5 text-[10px] font-bold border rounded-sm transition cursor-pointer active:scale-95 ${
+              className={`px-1.5 py-0.5 text-[10px] font-bold border transition cursor-pointer active:scale-95 ${
                 showEq
                   ? 'bg-theme-accent text-white border-theme-border'
                   : 'bg-theme-bg text-theme-muted border-theme-border/50'
