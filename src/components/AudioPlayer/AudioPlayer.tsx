@@ -43,13 +43,15 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [showEq, setShowEq] = useState<boolean>(false);
   
-  // STALE CLOSURE PREVENTION: Ref hält immer die neuste onNextSong-Referenz
+  // NEU: States für dynamisch ermittelte Audio-Werte bei Songwechsel
+  const [bitrate, setBitrate] = useState<string | null>(null);
+  const [sampleRate, setSampleRate] = useState<string | null>(null);
+  
   const onNextSongRef = useRef(onNextSong);
   useEffect(() => {
     onNextSongRef.current = onNextSong;
   }, [onNextSong]);
   
-  // Initialisierung von AudioContext und Web Audio API Node
   const initAudioNodes = () => {
     if (!audioRef.current) return;
     
@@ -60,39 +62,62 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
       audioContextRef.current = new AudioCtx();
     }
     
-    // A) AudioContext reaktivieren
     if (audioContextRef.current.state === 'suspended') {
       audioContextRef.current.resume();
     }
     
     if (!sourceNodeRef.current && audioContextRef.current) {
       try {
-        sourceNodeRef.current = audioContextRef.current.createMediaElementSource(
-          audioRef.current
-        );
-        
-        // B) SOUND-FIX: Signal explizit an die Lautsprecher leiten
+        sourceNodeRef.current = audioContextRef.current.createMediaElementSource(audioRef.current);
         sourceNodeRef.current.connect(audioContextRef.current.destination);
       } catch (err) {
         console.warn('SourceNode existiert bereits:', err);
       }
     }
     
-    if (
-      onAudioElementReady &&
-      audioRef.current &&
-      audioContextRef.current &&
-      sourceNodeRef.current
-    ) {
-      onAudioElementReady(
-        audioRef.current,
-        audioContextRef.current,
-        sourceNodeRef.current
-      );
+    if (onAudioElementReady && audioRef.current && audioContextRef.current && sourceNodeRef.current) {
+      onAudioElementReady(audioRef.current, audioContextRef.current, sourceNodeRef.current);
     }
   };
   
-  // Autoplay / Songwechsel Handling
+  // METADATEN / BITRATE BEI SONGWECHSEL BERECHNEN
+  useEffect(() => {
+    if (!audioSrc) {
+      setBitrate(null);
+      setSampleRate(null);
+      return;
+    }
+    
+    // Abtastrate aus dem aktiven AudioContext auslesen (oder Standard 44.1/48 kHz)
+    if (audioContextRef.current) {
+      const sr = (audioContextRef.current.sampleRate / 1000).toFixed(1);
+      setSampleRate(sr);
+    }
+    
+    // Optional: Bitrate über Dateigröße / Headerauswertung schätzen oder via fetch ermitteln
+    let isCancelled = false;
+    fetch(audioSrc, { method: 'HEAD' })
+      .then((res) => {
+        const contentLength = res.headers.get('content-length');
+        // Wenn die Dateigröße und Dauer bekannt sind, lässt sich die Bitrate grob errechnen
+        // Alternativ kannst du hier feste Standardwerte annehmen oder die Server-Response nutzen
+        if (contentLength && duration > 0 && !isCancelled) {
+          const bytes = parseInt(contentLength, 10);
+          const calculatedBps = Math.round((bytes * 8) / duration / 1000);
+          setBitrate(calculatedBps > 0 ? calculatedBps.toString() : '320');
+        } else {
+          setBitrate('320'); // Fallback
+        }
+      })
+      .catch(() => {
+        if (!isCancelled) setBitrate('320');
+      });
+    
+    return () => {
+      isCancelled = true;
+    };
+  }, [audioSrc, duration]);
+  
   useEffect(() => {
     if (!audioSrc || !audioRef.current) return;
     
@@ -112,13 +137,9 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     }
   }, [audioSrc]);
   
-  // Play / Pause steuern
   const togglePlay = () => {
     if (!audioRef.current || !audioSrc) return;
-    
     initAudioNodes();
-    
-    // Reaktivieren des AudioContext bei Benutzerinteraktion
     if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
       audioContextRef.current.resume();
     }
@@ -127,14 +148,10 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      audioRef.current
-        .play()
-        .then(() => setIsPlaying(true))
-        .catch((e) => console.error(e));
+      audioRef.current.play().then(() => setIsPlaying(true)).catch(console.error);
     }
   };
   
-  // Lautstärke steuern
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseFloat(e.target.value);
     setVolume(val);
@@ -155,21 +172,15 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     }
   };
   
-  // Seeking
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const time = parseFloat(e.target.value);
     setCurrentTime(time);
-    if (audioRef.current) {
-      audioRef.current.currentTime = time;
-    }
+    if (audioRef.current) audioRef.current.currentTime = time;
   };
   
-  // Song Ende Event-Handler
   const handleEnded = () => {
     setIsPlaying(false);
-    if (onNextSongRef.current) {
-      onNextSongRef.current();
-    }
+    if (onNextSongRef.current) onNextSongRef.current();
   };
   
   const formatTime = (time: number) => {
@@ -181,7 +192,6 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   
   return (
     <div className="flex flex-col w-full font-mono text-theme-text select-none">
-      {/* HIDDEN HTML5 AUDIO ELEMENT WITH ONENDED EVENT */}
       <audio
         ref={audioRef}
         onTimeUpdate={() => {
@@ -194,32 +204,31 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           const audioElement = e.currentTarget;
           const errorCode = audioElement.error?.code;
           
-          // Fehlercode 1 = MEDIA_ERR_ABORTED (Wird ausgelöst, wenn ein Track während des Ladens gewechselt wird)
-          // Das ist kein echter Fehler, sondern normal bei schnellem Skip!
-          if (errorCode === 1) {
-            return;
-          }
+          if (errorCode === 1) return;
           
           console.warn("Fehler beim Laden des Tracks:", {
             code: errorCode,
             message: audioElement.error?.message,
-            event: e
           });
           
-          if (onNextSongRef.current) {
-            onNextSongRef.current();
-          }
+          if (onNextSongRef.current) onNextSongRef.current();
         }}
         onEnded={handleEnded}
         crossOrigin="anonymous"
       />
       
-      {/* MAIN AUDIO PLAYER BOARD */}
       <div className="p-3 w-full transition-colors duration-300">
-        {/* SONG DISPLAY / HEADER */}
+        {/* HEADER MIT DYNAMISCH BERECHNETER BITRATE & SAMPLERATE */}
         <div className="bg-theme-bg/80 border border-theme-border/60 p-2 mb-3 flex flex-col gap-1">
           <div className="flex justify-between items-center text-[10px] text-theme-muted">
-            <span>TRACK PLAYER</span>
+            <div className="flex items-center gap-2">
+              <span>CURRENT TRACK</span>
+              {(bitrate || sampleRate) && (
+                <span className="text-theme-accent font-bold tracking-tight">
+                  {bitrate ? `${bitrate}kbps` : ''} {sampleRate ? `/ ${sampleRate}kHz` : ''}
+                </span>
+              )}
+            </div>
             <span className="font-bold text-theme-border">
               {isPlaying ? '▶ PLAYING' : '❚❚ PAUSED'}
             </span>
@@ -229,7 +238,6 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           </div>
         </div>
         
-        {/* PROGRESS BAR & TIMERS */}
         <div className="flex flex-col gap-1 mb-3">
           <input
             type="range"
@@ -246,19 +254,15 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           </div>
         </div>
         
-        {/* CONTROLS */}
         <div className="flex flex-wrap items-center justify-between gap-2">
-          {/* PLAYBACK & SHUFFLE & PLAYLIST BUTTONS */}
           <div className="flex items-center gap-1">
             <button
               onClick={onPrevSong}
               disabled={!onPrevSong}
               className="px-2 py-1 bg-theme-bg border border-theme-border/70 hover:bg-theme-accent/20 text-xs font-bold transition active:scale-95 disabled:opacity-40 cursor-pointer"
-              title="Vorheriger Song"
             >
               ⏮
             </button>
-            
             <button
               onClick={togglePlay}
               disabled={!audioSrc}
@@ -266,17 +270,14 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             >
               {isPlaying ? '▶' : '❚❚'}
             </button>
-            
             <button
               onClick={onNextSong}
               disabled={!onNextSong}
               className="px-2 py-1 bg-theme-bg border border-theme-border/70 hover:bg-theme-accent/20 text-xs font-bold transition active:scale-95 disabled:opacity-40 cursor-pointer"
-              title="Nächster Song"
             >
               ⏭
             </button>
             
-            {/* SHUFFLE TOGGLE */}
             {onToggleShuffle && (
               <button
                 onClick={onToggleShuffle}
@@ -285,24 +286,20 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                     ? 'bg-theme-accent text-white border-theme-border'
                     : 'bg-theme-bg text-theme-muted border-theme-border/50'
                 }`}
-                title="Shuffle An/Aus"
               >
                 {isShuffle ? '312' : '123'}
               </button>
             )}
             
-            {/* PLAYLIST MODAL BUTTON */}
             {onOpenPlaylist && (
               <button
                 onClick={onOpenPlaylist}
                 className="ml-1 px-2 py-1 bg-theme-bg text-theme-text border border-theme-border/70 hover:bg-theme-accent/20 text-[10px] font-bold transition active:scale-95 cursor-pointer"
-                title="Playlist öffnen"
               >
                 ≡♪
               </button>
             )}
             
-            {/* VISUALIZATION TOGGLE BUTTON */}
             {onToggleVisualizerSettings && (
               <button
                 onClick={onToggleVisualizerSettings}
@@ -311,20 +308,15 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                     ? 'bg-theme-accent text-white border-theme-border'
                     : 'bg-theme-bg text-theme-text border-theme-border/70 hover:bg-theme-accent/20'
                 }`}
-                title="Visualizer Einstellungen"
               >
                 📊
               </button>
             )}
           </div>
           
-          {/* VOLUME & EQ TOGGLE */}
           <div className="flex items-center gap-1.5">
             <div className="flex items-center gap-1 bg-theme-bg border border-theme-border/50 px-1.5 py-0.5">
-              <button
-                onClick={toggleMute}
-                className="text-[10px] text-theme-muted hover:text-theme-text cursor-pointer"
-              >
+              <button onClick={toggleMute} className="text-[10px] text-theme-muted hover:text-theme-text cursor-pointer">
                 {isMuted ? '🔇' : '🔊'}
               </button>
               <input
@@ -352,13 +344,9 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
         </div>
       </div>
       
-      {/* EQUALIZER COLLAPSIBLE PANEL */}
       {showEq && (
         <div className="border-t bg-theme-bg/50">
-          <Equalizer
-            audioContext={audioContextRef.current}
-            sourceNode={sourceNodeRef.current}
-          />
+          <Equalizer audioContext={audioContextRef.current} sourceNode={sourceNodeRef.current} />
         </div>
       )}
     </div>

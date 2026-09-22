@@ -235,17 +235,14 @@ export default function Home(): React.JSX.Element {
     });
   };
   
-  // AUTOMATISCHER & MANUELLER NÄCHSTER SONG
   const handleNextSong = () => {
     if (playlist.length === 0) return;
     
     setCurrentIndex((prevIdx) => {
       if (!isShuffle) {
-        // Lineares Abspielen (Loop am Ende der Playlist wieder zu Song 1)
         return (prevIdx + 1) % playlist.length;
       }
       
-      // Shuffle Mode: Nicht gespielte Tracks herausfiltern
       let unplayedItems = playlist.filter(
         (item) => !playedIds.includes(getSongUniqueId(item))
       );
@@ -347,7 +344,6 @@ export default function Home(): React.JSX.Element {
             <AudioPlayer
               audioSrc={audioSrc}
               currentSong={currentSong}
-              /* Garantiert immer eine Funktion übergeben, solange die Playlist nicht leer ist */
               onNextSong={playlist.length > 0 ? handleNextSong : undefined}
               onPrevSong={playlist.length > 0 ? handlePrevSong : undefined}
               onOpenPlaylist={() => setIsPlaylistOpen(true)}
