@@ -81,13 +81,11 @@ export const Visualizer = forwardRef<VisualizerRef, VisualizerProps>(
       visualizerInstanceRef.current = visualizer;
       
       // PARALLELE AUDIO-ANALYSE:
-      // Wir erstellen einen AnalyserNode und schalten ihn parallel zum Tonnetzwerk
       const analyser = audioContext.createAnalyser();
       analyser.fftSize = 512;
       
       try {
-        // Verbinde sourceNode mit dem Analyser, damit der Visualizer Frequenzen abgreift,
-        // ohne die Verbindung zum Equalizer oder Lautsprecher zu unterbrechen.
+        // Verbinde sourceNode mit dem Analyser
         sourceNode.connect(analyser);
         visualizer.connectAudio(analyser);
       } catch (e) {
@@ -139,8 +137,10 @@ export const Visualizer = forwardRef<VisualizerRef, VisualizerProps>(
         cancelAnimationFrame(animationFrameId);
         window.removeEventListener('resize', updateSize);
         resizeObserver.disconnect();
+        
+        // SAFE CLEANUP: Trenne NUR den Analyser, damit die Hauptverbindung der sourceNode aktiv bleibt!
         try {
-          sourceNode.disconnect(analyser);
+          analyser.disconnect();
         } catch (e) {
           // Ignorieren beim Unmount
         }
@@ -148,7 +148,7 @@ export const Visualizer = forwardRef<VisualizerRef, VisualizerProps>(
     }, [audioElement, audioContext, sourceNode]);
     
     return (
-      <div ref={containerRef} className="w-full h-full min-h-screen relative overflow-hidden border-amber-300 border-2 bg-green-700">
+      <div ref={containerRef} className="w-full h-full min-h-screen relative overflow-hidden bg-black">
         <canvas ref={canvasRef} className="w-full h-full block object-cover" />
       </div>
     );
