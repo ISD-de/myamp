@@ -11,7 +11,7 @@ interface FolderListerProps {
 
 export const FolderLister = ({ onSelectFolder }: FolderListerProps) => {
   const [folders, setFolders] = useState<string[]>([]);
-  const [searchTerm, setSearchTerm] = useState<string>(''); // State für Suchbegriff
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -52,7 +52,7 @@ export const FolderLister = ({ onSelectFolder }: FolderListerProps) => {
   
   const handleRefresh = async () => {
     localStorage.removeItem(CACHE_KEY);
-    setSearchTerm(''); // Suche bei Refresh zurücksetzen
+    setSearchTerm('');
     setLoading(true);
     try {
       const result = await getSubfolders();
@@ -71,15 +71,15 @@ export const FolderLister = ({ onSelectFolder }: FolderListerProps) => {
     }
   };
   
-  // Gefilterte Ordnerliste basierend auf der Sucheingabe
   const filteredFolders = folders.filter((folder) =>
     folder.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
   return (
-    <div className="border-player-border border-2 bg-player-bg flex flex-col gap-1">
-      {/* Such-Header mit Input & Reset-Option */}
-      <div className="p-1.5 border-b border-player-border flex items-center gap-2 bg-background/50">
+    
+    <div className="border-player-border border-2 bg-player-bg flex flex-col h-full font-mono overflow-hidden">
+      {/* Such-Header */}
+      <div className="p-1.5 border-b border-player-border flex items-center gap-2 bg-background/50 shrink-0">
         <input
           type="text"
           placeholder="Album suchen..."
@@ -99,9 +99,9 @@ export const FolderLister = ({ onSelectFolder }: FolderListerProps) => {
         )}
       </div>
       
-      {/* Liste & Lade- / Fehlerzustände */}
-      <div className="w-full max-h-56 overflow-auto overflow-y-auto snap-y snap-mandatory flex flex-col">
-        {loading && <div className="p-3 text-main border border-border">Lade Ordner...</div>}
+      {/* Liste füllt mit flex-1 min-h-0 den restlichen Platz aus */}
+      <div className="w-full flex-1 min-h-0 overflow-y-auto snap-y snap-mandatory flex flex-col">
+        {loading && <div className="p-3 text-xs text-main border border-border">Lade Ordner...</div>}
         {error && (
           <div className="text-main text-sm bg-red-950/50 p-3 border border-border">{error}</div>
         )}
@@ -115,7 +115,7 @@ export const FolderLister = ({ onSelectFolder }: FolderListerProps) => {
                     <li
                       key={index}
                       onClick={() => handleFolderClick(folder)}
-                      className="snap-start text-text-light hover:bg-background-hover text-xs break-all border border-player-border p-1 -mb-px cursor-pointer"
+                      className="snap-start text-text-light hover:bg-background-hover text-xs break-all border-b border-player-border p-1.5 cursor-pointer transition-colors"
                     >
                       <span>{folder}</span>
                     </li>

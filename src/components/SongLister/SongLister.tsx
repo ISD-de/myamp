@@ -196,7 +196,7 @@ export const SongLister = ({
       </div>
       
       {/* Songliste */}
-      <div className="w-full max-h-56 overflow-y-auto snap-y snap-mandatory flex flex-col">
+      <div className="w-full flex-1 min-h-0 overflow-y-auto snap-y snap-mandatory flex flex-col">
         {loading && <div className="p-3 text-xs text-main border border-border">Lade MP3s...</div>}
         {error && (
           <div className="text-main text-sm bg-red-950/50 p-3 border border-border">{error}</div>

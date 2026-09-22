@@ -40,7 +40,7 @@ export const Playlist: React.FC<PlaylistProps> = ({
       </div>
       
       {/* Playlist Einträge */}
-      <div className="w-full max-h-56 overflow-y-auto flex flex-col">
+      <div className="w-full flex-1 min-h-0 overflow-y-auto flex flex-col">
         {items.length === 0 ? (
           <div className="p-3 text-xs text-gray-500 text-center">
             Playlist ist leer. Klicke auf Songs oder "+ Album", um Titel hinzuzufügen.

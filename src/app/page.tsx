@@ -11,6 +11,9 @@ import Playlist, { PlaylistItem } from '@/components/Playlist/Playlist';
 export default function Home(): React.JSX.Element {
   const [currentFolder, setCurrentFolder] = useState<string | null>(null);
   
+  // Modal-State für Media-Library / Playlist
+  const [isPlaylistOpen, setIsPlaylistOpen] = useState<boolean>(false);
+  
   // States & Refs für die Playlist
   const [playlist, setPlaylist] = useState<PlaylistItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(-1);
@@ -23,7 +26,7 @@ export default function Home(): React.JSX.Element {
   const visualizerRef = useRef<VisualizerRef | null>(null);
   const visualizerContainerRef = useRef<HTMLDivElement | null>(null);
   
-  // Ermittlung des aktuell aktiven Songs aus der Playlist
+  // Aktiver Song aus der Playlist
   const currentItem = currentIndex >= 0 && currentIndex < playlist.length ? playlist[currentIndex] : null;
   const currentSong = currentItem ? currentItem.songName : null;
   
@@ -33,12 +36,10 @@ export default function Home(): React.JSX.Element {
   
   // --- PLAYLIST-LOGIK ---
   
-  // Ordnerauswahl im Scanner
   const onSelectFolder = (folder: string) => {
     setCurrentFolder(folder);
   };
   
-  // Einzelnen Song zur Playlist hinzufügen
   const handleAddSongToPlaylist = (song: string) => {
     if (!currentFolder) return;
     
@@ -50,12 +51,11 @@ export default function Home(): React.JSX.Element {
     
     setPlaylist((prev) => {
       const updated = [...prev, newItem];
-      if (currentIndex === -1) setCurrentIndex(0); // Ersten Song direkt aktivieren
+      if (currentIndex === -1) setCurrentIndex(0);
       return updated;
     });
   };
   
-  // Ganzes Album zur Playlist hinzufügen
   const handleAddAlbumToPlaylist = (songs: string[]) => {
     if (!currentFolder) return;
     
@@ -72,7 +72,6 @@ export default function Home(): React.JSX.Element {
     });
   };
   
-  // Titel aus der Playlist entfernen
   const handleRemoveFromPlaylist = (id: string) => {
     setPlaylist((prev) => {
       const removeIndex = prev.findIndex((item) => item.id === id);
@@ -93,25 +92,22 @@ export default function Home(): React.JSX.Element {
     });
   };
   
-  // Playlist komplett leeren
   const handleClearPlaylist = () => {
     setPlaylist([]);
     setCurrentIndex(-1);
   };
   
-  // Nächster Track (z. B. am Ende des Songs)
   const handleNextSong = () => {
     if (playlist.length === 0) return;
     setCurrentIndex((prev) => (prev + 1 < playlist.length ? prev + 1 : 0));
   };
   
-  // Vorheriger Track
   const handlePrevSong = () => {
     if (playlist.length === 0) return;
     setCurrentIndex((prev) => (prev - 1 >= 0 ? prev - 1 : playlist.length - 1));
   };
   
-  // --- VISUALIZER & FULLSCREEN ---
+  // --- FULLSCREEN LOGIK ("F") ---
   
   const handlePresetChange = (presetData: any, presetName: string) => {
     if (visualizerRef.current?.loadPreset) {
@@ -140,17 +136,20 @@ export default function Home(): React.JSX.Element {
         e.preventDefault();
         toggleFullscreen();
       }
+      if (e.key === 'Escape' && isPlaylistOpen) {
+        setIsPlaylistOpen(false);
+      }
     };
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isPlaylistOpen]);
   
   return (
-    <main className="min-h-screen bg-background p-1 flex flex-col gap-1 font-mono">
+    <main className="min-h-screen bg-background p-1 flex flex-col font-mono">
       {/* OBERER BEREICH: Player & Visualizer */}
       <div className="flex flex-col gap-0 md:gap-1 md:flex-row items-stretch w-full">
-        <div className="w-full md:w-125">
+        <div className="w-full md:w-125 flex flex-col">
           <AudioPlayer
             audioSrc={audioSrc}
             currentSong={currentSong}
@@ -164,46 +163,88 @@ export default function Home(): React.JSX.Element {
               setSourceNode(source);
             }}
           />
-        </div>
-        {audioElement && (
-          <div
-            ref={visualizerContainerRef}
-            className="flex-1 flex flex-col justify-between bg-player-bg border border-player-border overflow-hidden"
-          >
-            <div className="flex-1 relative min-h-0 w-full overflow-hidden">
-              <Visualizer ref={visualizerRef} audioElement={audioElement} />
-            </div>
-            <div className="flex items-center justify-between gap-0 border-t border-player-border bg-player-border">
-              <PresetSelector onPresetChange={handlePresetChange} />
-              <button
-                onClick={() => visualizerRef.current?.nextPreset()}
-                className="text-white text-xs font-semibold px-3 transition active:scale-95 whitespace-nowrap"
-              >
-                🔀 Preset wechseln
-              </button>
-            </div>
+          
+          {/* Winamp-Style Button für Playlist/Library */}
+          <div className="mt-1 flex items-center justify-between border-2 border-player-border bg-player-bg p-1">
+            <span className="text-xs text-text-light font-bold">MEDIA LIBRARY</span>
+            <button
+              onClick={() => setIsPlaylistOpen(true)}
+              className="text-xs bg-purple-900/60 hover:bg-purple-700/80 text-white font-semibold px-3 py-1 rounded border border-purple-500/50 transition active:scale-95 flex items-center gap-1.5"
+            >
+              <span>📂</span> Playlist & Explorer {playlist.length > 0 && `(${playlist.length})`}
+            </button>
           </div>
-        )}
+        </div>
+        
+        {/* Visualizer-Container bleibt immer in voller Höhe erhalten */}
+        <div
+          ref={visualizerContainerRef}
+          className="flex-1 flex flex-col justify-between bg-player-bg border border-player-border overflow-hidden min-h-64"
+        >
+          <div className="flex-1 relative min-h-0 w-full overflow-hidden bg-black">
+            {/* Nur wenn ein Song geladen ist & audioElement bereitsteht, wird der Visualizer aktiv */}
+            {audioElement && currentSong && (
+              <Visualizer ref={visualizerRef} audioElement={audioElement} />
+            )}
+          </div>
+          
+          <div className="flex items-center justify-between gap-0 border-t border-player-border bg-player-border">
+            <PresetSelector onPresetChange={handlePresetChange} />
+            <button
+              onClick={() => visualizerRef.current?.nextPreset()}
+              disabled={!currentSong}
+              className="text-white text-xs font-semibold px-3 transition active:scale-95 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              🔀 Preset wechseln
+            </button>
+          </div>
+        </div>
       </div>
       
-      {/* UNTERER BEREICH: Explorer, Songs & Playlist */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-1">
-        <DirectoryScanner onSelectFolder={onSelectFolder} />
-        
-        <SongLister
-          folderName={currentFolder}
-          onSelectSong={handleAddSongToPlaylist}
-          onAddAlbumToPlaylist={handleAddAlbumToPlaylist}
-        />
-        
-        <Playlist
-          items={playlist}
-          currentIndex={currentIndex}
-          onSelectTrack={(index: React.SetStateAction<number>) => setCurrentIndex(index)}
-          onRemoveTrack={handleRemoveFromPlaylist}
-          onClearPlaylist={handleClearPlaylist}
-        />
-      </div>
+      {isPlaylistOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center">
+          <div className="bg-player-bg border-2 border-player-border rounded-lg shadow-2xl w-[90vw] h-[90vh] flex flex-col overflow-hidden">
+            
+            <div className="p-2 border-b border-player-border bg-background/60 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2 text-xs font-bold text-text-light">
+                <span>🎵 MEDIA EXPLORER & PLAYLIST</span>
+              </div>
+              <button
+                onClick={() => setIsPlaylistOpen(false)}
+                className="text-gray-400 hover:text-white text-sm px-2 py-0.5 border border-player-border rounded bg-player-bg transition"
+                title="Schließen (ESC)"
+              >
+                ✕ Schließen
+              </button>
+            </div>
+            
+            
+            <div className="p-2 grid grid-cols-1 md:grid-cols-3 gap-2 flex-1 min-h-0 overflow-hidden">
+              <div className="h-full overflow-hidden">
+                <DirectoryScanner onSelectFolder={onSelectFolder} />
+              </div>
+              
+              <div className="h-full overflow-hidden">
+                <SongLister
+                  folderName={currentFolder}
+                  onSelectSong={handleAddSongToPlaylist}
+                  onAddAlbumToPlaylist={handleAddAlbumToPlaylist}
+                />
+              </div>
+              
+              <div className="h-full overflow-hidden">
+                <Playlist
+                  items={playlist}
+                  currentIndex={currentIndex}
+                  onSelectTrack={(index) => setCurrentIndex(index)}
+                  onRemoveTrack={handleRemoveFromPlaylist}
+                  onClearPlaylist={handleClearPlaylist}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
