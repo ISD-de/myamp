@@ -32,9 +32,10 @@ export const Equalizer: React.FC<EqualizerProps> = ({
                                                       sourceNode,
                                                       destinationNode
                                                     }) => {
-  const [enabled, setEnabled] = useState(true);
-  const [preampGain, setPreampGain] = useState(6);
-  const [pan, setPan] = useState(0);
+  // mode: 'preset' (ON = geladenes Preset) | 'flat' (FLAT = alle Frequenzbänder auf 0 dB)
+  const [isFlat, setIsFlat] = useState<boolean>(false);
+  const [preampGain, setPreampGain] = useState<number>(0);
+  const [pan, setPan] = useState<number>(0);
   const [bands, setBands] = useState<BandSetting[]>(ITUNES_BANDS);
   
   const preampNodeRef = useRef<GainNode | null>(null);
@@ -44,9 +45,9 @@ export const Equalizer: React.FC<EqualizerProps> = ({
   useEffect(() => {
     if (!audioContext || !sourceNode) return;
     
-    sourceNode.disconnect();
     const targetDestination = destinationNode || audioContext.destination;
     
+    // Erstelle Nodes
     const preamp = audioContext.createGain();
     preamp.gain.value = Math.pow(10, preampGain / 20);
     preampNodeRef.current = preamp;
@@ -67,10 +68,18 @@ export const Equalizer: React.FC<EqualizerProps> = ({
         filter.Q.value = 1.4;
       }
       filter.frequency.value = band.frequency;
-      filter.gain.value = enabled ? band.gain : 0;
+      // Bei 'isFlat' wird Gain 0 angewendet, sonst der Bandwert
+      filter.gain.value = isFlat ? 0 : band.gain;
       return filter;
     });
     filterNodesRef.current = filters;
+    
+    // Signal-Kette aufbauen
+    try {
+      sourceNode.disconnect();
+    } catch (e) {
+      // Ignorieren falls nicht verbunden
+    }
     
     let lastNode: AudioNode = sourceNode;
     lastNode.connect(preamp);
@@ -89,14 +98,15 @@ export const Equalizer: React.FC<EqualizerProps> = ({
     lastNode.connect(targetDestination);
     
     return () => {
-      filters.forEach((f) => f.disconnect());
-      preamp.disconnect();
-      panner?.disconnect();
+      // Cleanup: Trenne Equalizer-Kette und verbinde Source direkt mit der Destination
       try {
         sourceNode.disconnect();
+        filters.forEach((f) => f.disconnect());
+        preamp.disconnect();
+        panner?.disconnect();
         sourceNode.connect(targetDestination);
       } catch (e) {
-        // Fallback-Abfangung
+        console.warn('Equalizer cleanup warning:', e);
       }
     };
   }, [audioContext, sourceNode, destinationNode]);
@@ -120,41 +130,51 @@ export const Equalizer: React.FC<EqualizerProps> = ({
     updated[index].gain = newGain;
     setBands(updated);
     
-    if (enabled && filterNodesRef.current[index]) {
+    // Wenn man im ON-Modus einen Regler schiebt, wird dieser direkt angewendet
+    if (!isFlat && filterNodesRef.current[index]) {
       filterNodesRef.current[index].gain.value = newGain;
     }
   };
   
-  const toggleEnabled = () => {
-    const nextState = !enabled;
-    setEnabled(nextState);
+  // Umschalten zwischen ON (Preset) und FLAT (0 dB Neutrallinie)
+  const toggleFlatMode = (flatState: boolean) => {
+    setIsFlat(flatState);
     filterNodesRef.current.forEach((filter, i) => {
-      filter.gain.value = nextState ? bands[i].gain : 0;
+      filter.gain.value = flatState ? 0 : bands[i].gain;
     });
   };
   
   return (
     <div className="bg-theme-panel border-2 border-theme-border -mt-2 p-3 w-full md:max-w-137.5 font-mono text-xs text-theme-text select-none transition-colors duration-300">
-      
-      {/* HEADER CONTROLS (ON/OFF, PRESET, PAN) */}
+      {/* HEADER CONTROLS */}
       <div className="flex items-center justify-between pb-3 mb-2 border-b border-theme-border/40">
         <div className="flex items-center gap-2">
+          {/* ON BUTTON (Aktiviert das aktuelle Preset) */}
           <button
-            onClick={toggleEnabled}
-            className={`px-2 py-0.5 rounded border text-[10px] font-bold transition active:scale-95 cursor-pointer ${
-              enabled
+            onClick={() => toggleFlatMode(false)}
+            className={`px-2.5 py-0.5 rounded border text-[10px] font-bold transition active:scale-95 cursor-pointer ${
+              !isFlat
                 ? 'bg-theme-accent text-white border-theme-border shadow-sm'
-                : 'bg-theme-bg text-theme-muted/50 border-theme-border/40'
+                : 'bg-theme-bg text-theme-muted/60 border-theme-border/40 hover:text-theme-text'
             }`}
           >
-            {enabled ? 'ON' : 'OFF'}
+            ON
           </button>
           
-          <div className="flex items-center bg-theme-bg border border-theme-border/50 rounded px-1.5 py-0.5 text-theme-muted font-semibold">
-            <span>Flat</span>
-          </div>
+          {/* FLAT BUTTON (Setzt den Filter-Effekt neutral auf 0 dB) */}
+          <button
+            onClick={() => toggleFlatMode(true)}
+            className={`px-2.5 py-0.5 rounded border text-[10px] font-bold transition active:scale-95 cursor-pointer ${
+              isFlat
+                ? 'bg-theme-accent text-white border-theme-border shadow-sm'
+                : 'bg-theme-bg text-theme-muted/60 border-theme-border/40 hover:text-theme-text'
+            }`}
+          >
+            FLAT
+          </button>
         </div>
         
+        {/* PANNER CONTROL */}
         <div className="flex items-center gap-2 text-theme-muted font-bold text-[10px]">
           <span>L</span>
           <input
@@ -172,13 +192,12 @@ export const Equalizer: React.FC<EqualizerProps> = ({
       
       {/* SLIDERS SECTION */}
       <div className="relative flex justify-between items-center px-1 pt-2 pb-1">
-        {/* BACKGROUND GRID LINES */}
         <div className="absolute left-7 right-0 top-6 bottom-7 flex flex-col justify-between pointer-events-none opacity-25 border-y border-theme-border">
           <div className="border-b border-dashed border-theme-text/40 w-full h-0" />
           <div className="border-b border-dashed border-theme-text/40 w-full h-0" />
         </div>
         
-        {/* PREAMP SLIDER */}
+        {/* PREAMP */}
         <div className="flex flex-col items-center gap-1 z-10">
           <span className="text-[9px] text-theme-muted h-3 font-semibold">
             {preampGain > 0 ? `+${preampGain}` : preampGain}
@@ -195,28 +214,30 @@ export const Equalizer: React.FC<EqualizerProps> = ({
           <span className="font-bold text-theme-text mt-1">PRE</span>
         </div>
         
-        {/* DIVIDER */}
         <div className="w-px h-28 bg-theme-border/50 mx-1 z-10" />
         
-        {/* FREQUENCY BAND SLIDERS */}
-        {bands.map((band, i) => (
-          <div key={band.label} className="flex flex-col items-center gap-1 z-10">
-            <span className="text-[9px] text-theme-muted h-3 font-semibold">
-              {band.gain > 0 ? `+${band.gain}` : band.gain}
-            </span>
-            <input
-              type="range"
-              min="-12"
-              max="12"
-              step="0.5"
-              value={enabled ? band.gain : 0}
-              disabled={!enabled}
-              onChange={(e) => handleBandChange(i, parseFloat(e.target.value))}
-              className="h-28 w-2 appearance-none bg-theme-bg rounded border border-theme-border/60 cursor-pointer accent-theme-accent disabled:opacity-30 [writing-mode:vertical-lr] [direction:rtl]"
-            />
-            <span className="font-bold text-theme-text mt-1 text-[10px]">{band.label}</span>
-          </div>
-        ))}
+        {/* BANDS */}
+        {bands.map((band, i) => {
+          const displayValue = isFlat ? 0 : band.gain;
+          return (
+            <div key={band.label} className="flex flex-col items-center gap-1 z-10">
+              <span className="text-[9px] text-theme-muted h-3 font-semibold">
+                {displayValue > 0 ? `+${displayValue}` : displayValue}
+              </span>
+              <input
+                type="range"
+                min="-12"
+                max="12"
+                step="0.5"
+                value={displayValue}
+                disabled={isFlat}
+                onChange={(e) => handleBandChange(i, parseFloat(e.target.value))}
+                className="h-28 w-2 appearance-none bg-theme-bg rounded border border-theme-border/60 cursor-pointer accent-theme-accent disabled:opacity-40 [writing-mode:vertical-lr] [direction:rtl]"
+              />
+              <span className="font-bold text-theme-text mt-1 text-[10px]">{band.label}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
