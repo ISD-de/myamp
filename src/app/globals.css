@@ -1,41 +1,108 @@
 @import "tailwindcss";
 
-@theme{
-    --color-background: #222222;
-    --color-background-hover: #2a2a2a;
-    --color-border:#333333;
-    --color-text:#eeeeee;
-    --color-text-light:#aaaabb;
+/* 1. Theme-Variablen & Farbschemata */
+@layer base {
+    /* Standard-Theme: Cyberpunk Neon / Winamp Classic */
+    :root, [data-theme="cyberpunk"] {
+        --theme-bg: #0d0f12;
+        --theme-panel: #161920;
+        --theme-border: #00ffcc;
+        --theme-text: #ffffff;
+        --theme-muted: #8a99ad;
+        --theme-accent: #ff007f;
+        --theme-glow: #00ffcc88;
+    }
 
+    /* Matrix / Terminal Theme */
+    [data-theme="matrix"] {
+        --theme-bg: #050b05;
+        --theme-panel: #0d1a0d;
+        --theme-border: #00ff41;
+        --theme-text: #00ff41;
+        --theme-muted: #008f11;
+        --theme-accent: #00ff41;
+        --theme-glow: #00ff41aa;
+    }
 
-    --color-player-bg:#23272b;
-    --color-player-border:#15171a;
-    --color-player-eq-bg:#18191b;
-    --color-player-accent:#b0b5c0;
-    --color-player-text-info: #999999;
-    --color-player-text-disabled: #1c6977;
-    --color-player-text-muted: #28c0db;
-    --color-player-text-highlight: #00ffcc;
-    --color-player-divider: #2d3137;
+    /* Synthwave / Vaporwave Theme */
+    [data-theme="synthwave"] {
+        --theme-bg: #1a0933;
+        --theme-panel: #2a114d;
+        --theme-border: #f72585;
+        --theme-text: #7209b7;
+        --theme-muted: #b5179e;
+        --theme-accent: #4cc9f0;
+        --theme-glow: #f72585aa;
+    }
+
+    /* Modern Dark Minimal Theme */
+    [data-theme="dark"] {
+        --theme-bg: #121212;
+        --theme-panel: #1e1e1e;
+        --theme-border: #333333;
+        --theme-text: #e0e0e0;
+        --theme-muted: #757575;
+        --theme-accent: #3b82f6;
+        --theme-glow: #3b82f6aa;
+    }
 }
 
-::-webkit-scrollbar {
-    width: 10px;
+/* 2. Zuweisung an Tailwind v4 Utilities */
+@theme {
+    --color-theme-bg: var(--theme-bg);
+    --color-theme-panel: var(--theme-panel);
+    --color-theme-border: var(--theme-border);
+    --color-theme-text: var(--theme-text);
+    --color-theme-muted: var(--theme-muted);
+    --color-theme-accent: var(--theme-accent);
+    --color-theme-glow: var(--theme-glow);
 }
 
-::-webkit-scrollbar-track {
-    background: var(--color-background);
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--color-text-light);
-    border-radius: 9999px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--color-text);
-}
-
+/* 3. Basis-Restyling */
 body {
-    font-family: Arial, Helvetica, sans-serif;
+    background-color: var(--theme-bg);
+    color: var(--theme-text);
+    font-family: monospace;
 }
+
+/*@import "tailwindcss";*/
+
+/*@theme{*/
+/*    --color-background: #222222;*/
+/*    --color-background-hover: #2a2a2a;*/
+/*    --color-border:#333333;*/
+/*    --color-text:#eeeeee;*/
+/*    --color-text-light:#aaaabb;*/
+
+
+/*    --color-player-bg:#23272b;*/
+/*    --color-player-border:#15171a;*/
+/*    --color-player-eq-bg:#18191b;*/
+/*    --color-player-accent:#b0b5c0;*/
+/*    --color-player-text-info: #999999;*/
+/*    --color-player-text-disabled: #1c6977;*/
+/*    --color-player-text-muted: #28c0db;*/
+/*    --color-player-text-highlight: #00ffcc;*/
+/*    --color-player-divider: #2d3137;*/
+/*}*/
+
+/*::-webkit-scrollbar {*/
+/*    width: 10px;*/
+/*}*/
+
+/*::-webkit-scrollbar-track {*/
+/*    background: var(--color-background);*/
+/*}*/
+
+/*::-webkit-scrollbar-thumb {*/
+/*    background: var(--color-text-light);*/
+/*    border-radius: 9999px;*/
+/*}*/
+
+/*::-webkit-scrollbar-thumb:hover {*/
+/*    background: var(--color-text);*/
+/*}*/
+
+/*body {*/
+/*    font-family: Arial, Helvetica, sans-serif;*/
+/*}*/

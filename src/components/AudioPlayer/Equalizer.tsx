@@ -1,6 +1,6 @@
 'use client';
 
-import React, {useEffect, useRef, useState} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 export interface BandSetting {
   label: string;
@@ -9,16 +9,16 @@ export interface BandSetting {
 }
 
 const ITUNES_BANDS: BandSetting[] = [
-  {label: '70', frequency: 70, gain: 3},
-  {label: '180', frequency: 180, gain: -4},
-  {label: '320', frequency: 320, gain: -6},
-  {label: '600', frequency: 600, gain: -9},
-  {label: '1K', frequency: 1000, gain: -9},
-  {label: '3K', frequency: 3000, gain: -8},
-  {label: '6K', frequency: 6000, gain: -5},
-  {label: '12K', frequency: 12000, gain: -3},
-  {label: '14K', frequency: 14000, gain: 2},
-  {label: '16K', frequency: 16000, gain: 7}
+  { label: '70', frequency: 70, gain: 3 },
+  { label: '180', frequency: 180, gain: -4 },
+  { label: '320', frequency: 320, gain: -6 },
+  { label: '600', frequency: 600, gain: -9 },
+  { label: '1K', frequency: 1000, gain: -9 },
+  { label: '3K', frequency: 3000, gain: -8 },
+  { label: '6K', frequency: 6000, gain: -5 },
+  { label: '12K', frequency: 12000, gain: -3 },
+  { label: '14K', frequency: 14000, gain: 2 },
+  { label: '16K', frequency: 16000, gain: 7 }
 ];
 
 interface EqualizerProps {
@@ -40,7 +40,6 @@ export const Equalizer: React.FC<EqualizerProps> = ({
   const preampNodeRef = useRef<GainNode | null>(null);
   const pannerNodeRef = useRef<StereoPannerNode | null>(null);
   const filterNodesRef = useRef<BiquadFilterNode[]>([]);
-  
   
   useEffect(() => {
     if (!audioContext || !sourceNode) return;
@@ -97,6 +96,7 @@ export const Equalizer: React.FC<EqualizerProps> = ({
         sourceNode.disconnect();
         sourceNode.connect(targetDestination);
       } catch (e) {
+        // Fallback-Abfangung
       }
     };
   }, [audioContext, sourceNode, destinationNode]);
@@ -134,26 +134,28 @@ export const Equalizer: React.FC<EqualizerProps> = ({
   };
   
   return (
-    <div
-      className="bg-player-eq-bg border-2 border-player-border -mt-2 p-3 w-full md:max-w-137.5 font-mono text-xs text-text select-none">
+    <div className="bg-theme-panel border-2 border-theme-border -mt-2 p-3 w-full md:max-w-137.5 font-mono text-xs text-theme-text select-none transition-colors duration-300">
       
-      <div className="flex items-center justify-between pb-3 mb-2 border-b border-[#25282d]">
+      {/* HEADER CONTROLS (ON/OFF, PRESET, PAN) */}
+      <div className="flex items-center justify-between pb-3 mb-2 border-b border-theme-border/40">
         <div className="flex items-center gap-2">
           <button
             onClick={toggleEnabled}
-            className={`px-2 py-0.5 rounded border text-[10px] font-bold transition ${
+            className={`px-2 py-0.5 rounded border text-[10px] font-bold transition active:scale-95 cursor-pointer ${
               enabled
-                ? 'bg-linear-to-b from-[#4a4e57] to-[#2b2d33] text-white border-[#5a5f6b] shadow-inner'
-                : 'bg-[#121315] text-[#555] border-[#222]'
+                ? 'bg-theme-accent text-white border-theme-border shadow-sm'
+                : 'bg-theme-bg text-theme-muted/50 border-theme-border/40'
             }`}
           >
             {enabled ? 'ON' : 'OFF'}
           </button>
-          <div className="flex items-center bg-[#121315] border border-[#2d3035] rounded px-1.5 py-0.5 text-[#a0a5b0]">
+          
+          <div className="flex items-center bg-theme-bg border border-theme-border/50 rounded px-1.5 py-0.5 text-theme-muted font-semibold">
             <span>Flat</span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        
+        <div className="flex items-center gap-2 text-theme-muted font-bold text-[10px]">
           <span>L</span>
           <input
             type="range"
@@ -162,19 +164,23 @@ export const Equalizer: React.FC<EqualizerProps> = ({
             step="0.05"
             value={pan}
             onChange={(e) => handlePanChange(parseFloat(e.target.value))}
-            className="w-24 h-1 bg-[#0d0e10] rounded appearance-none cursor-pointer accent-[#b0b5c0]"
+            className="w-24 h-1 bg-theme-bg rounded appearance-none cursor-pointer accent-theme-accent"
           />
           <span>R</span>
         </div>
       </div>
+      
+      {/* SLIDERS SECTION */}
       <div className="relative flex justify-between items-center px-1 pt-2 pb-1">
-        <div
-          className="absolute left-7 right-0 top-6 bottom-7 flex flex-col justify-between pointer-events-none opacity-20 border-y border-[#aaa]">
-          <div className="border-b border-dashed border-white w-full h-0"></div>
-          <div className="border-b border-dashed border-white w-full h-0"></div>
+        {/* BACKGROUND GRID LINES */}
+        <div className="absolute left-7 right-0 top-6 bottom-7 flex flex-col justify-between pointer-events-none opacity-25 border-y border-theme-border">
+          <div className="border-b border-dashed border-theme-text/40 w-full h-0" />
+          <div className="border-b border-dashed border-theme-text/40 w-full h-0" />
         </div>
+        
+        {/* PREAMP SLIDER */}
         <div className="flex flex-col items-center gap-1 z-10">
-          <span className="text-[9px] text-[#666] h-3">
+          <span className="text-[9px] text-theme-muted h-3 font-semibold">
             {preampGain > 0 ? `+${preampGain}` : preampGain}
           </span>
           <input
@@ -184,16 +190,18 @@ export const Equalizer: React.FC<EqualizerProps> = ({
             step="0.5"
             value={preampGain}
             onChange={(e) => handlePreampChange(parseFloat(e.target.value))}
-            className="h-28 w-2 appearance-none bg-[#0a0b0c] rounded border border-[#2a2d33] cursor-pointer accent-[#d0d5e0] [writing-mode:vertical-lr] [direction:rtl]"
+            className="h-28 w-2 appearance-none bg-theme-bg rounded border border-theme-border/60 cursor-pointer accent-theme-accent [writing-mode:vertical-lr] [direction:rtl]"
           />
-          <span className="font-bold text-[#a0a5b0] mt-1">PRE</span>
+          <span className="font-bold text-theme-text mt-1">PRE</span>
         </div>
         
-        <div className="w-px h-28 bg-[#282b30] mx-1 z-10"/>
+        {/* DIVIDER */}
+        <div className="w-px h-28 bg-theme-border/50 mx-1 z-10" />
         
+        {/* FREQUENCY BAND SLIDERS */}
         {bands.map((band, i) => (
           <div key={band.label} className="flex flex-col items-center gap-1 z-10">
-            <span className="text-[9px] text-[#666] h-3">
+            <span className="text-[9px] text-theme-muted h-3 font-semibold">
               {band.gain > 0 ? `+${band.gain}` : band.gain}
             </span>
             <input
@@ -204,13 +212,12 @@ export const Equalizer: React.FC<EqualizerProps> = ({
               value={enabled ? band.gain : 0}
               disabled={!enabled}
               onChange={(e) => handleBandChange(i, parseFloat(e.target.value))}
-              className="h-28 w-2 appearance-none bg-[#0a0b0c] rounded border border-[#2a2d33] cursor-pointer accent-[#d0d5e0] disabled:opacity-30 [writing-mode:vertical-lr] [direction:rtl]"
+              className="h-28 w-2 appearance-none bg-theme-bg rounded border border-theme-border/60 cursor-pointer accent-theme-accent disabled:opacity-30 [writing-mode:vertical-lr] [direction:rtl]"
             />
-            <span className="font-bold text-[#a0a5b0] mt-1 text-[10px]">{band.label}</span>
+            <span className="font-bold text-theme-text mt-1 text-[10px]">{band.label}</span>
           </div>
         ))}
       </div>
-    
     </div>
   );
 };

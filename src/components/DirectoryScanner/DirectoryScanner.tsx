@@ -26,18 +26,15 @@ export const FolderLister = ({ onSelectFolder }: FolderListerProps) => {
           const parsed = JSON.parse(cachedData);
           setFolders(parsed);
           setLoading(false);
-          console.log('⚡ Ordner aus localStorage geladen!');
           return;
         } catch (e) {
           localStorage.removeItem(CACHE_KEY);
         }
       }
       
-      console.log('📁 Kein Cache gefunden. Rufe Server Action auf...');
       try {
         const result = await getSubfolders();
         setFolders(result);
-        
         localStorage.setItem(CACHE_KEY, JSON.stringify(result));
       } catch (err: any) {
         setError(err.message);
@@ -76,22 +73,22 @@ export const FolderLister = ({ onSelectFolder }: FolderListerProps) => {
   );
   
   return (
-    
-    <div className="border-player-border border-2 bg-player-bg flex flex-col h-full font-mono overflow-hidden">
-      {/* Such-Header */}
-      <div className="p-1.5 border-b border-player-border flex items-center gap-2 bg-background/50 shrink-0">
+    <div className="border-2 border-theme-border bg-theme-panel text-theme-text flex flex-col h-full font-mono overflow-hidden transition-colors duration-300">
+      
+      {/* SUCH-HEADER */}
+      <div className="p-1.5 border-b border-theme-border flex items-center gap-2 bg-theme-bg/60 shrink-0">
         <input
           type="text"
           placeholder="Album suchen..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           disabled={loading || !!error}
-          className="w-full bg-player-bg text-text-light text-xs px-2 py-1 border border-player-border focus:outline-none placeholder:text-gray-400 disabled:opacity-50"
+          className="w-full bg-theme-bg text-theme-text text-xs px-2 py-1 border border-theme-border/60 focus:border-theme-border focus:outline-none placeholder:text-theme-muted/50 disabled:opacity-50 rounded-sm"
         />
         {searchTerm && (
           <button
             onClick={() => setSearchTerm('')}
-            className="text-xs text-gray-400 hover:text-white px-1.5 py-0.5 border border-player-border bg-player-bg"
+            className="text-xs text-theme-muted hover:text-theme-text px-1.5 py-0.5 border border-theme-border bg-theme-bg rounded-sm transition active:scale-95 cursor-pointer"
             title="Suche zurücksetzen"
           >
             ✕
@@ -99,31 +96,41 @@ export const FolderLister = ({ onSelectFolder }: FolderListerProps) => {
         )}
       </div>
       
-      {/* Liste füllt mit flex-1 min-h-0 den restlichen Platz aus */}
+      {/* ALBUM-LISTE */}
       <div className="w-full flex-1 min-h-0 overflow-y-auto snap-y snap-mandatory flex flex-col">
-        {loading && <div className="p-3 text-xs text-main border border-border">Lade Ordner...</div>}
+        {loading && (
+          <div className="p-3 text-xs text-theme-muted animate-pulse">
+            ⏳ Lade Ordner...
+          </div>
+        )}
+        
         {error && (
-          <div className="text-main text-sm bg-red-950/50 p-3 border border-border">{error}</div>
+          <div className="text-xs bg-red-950/60 text-red-400 p-3 border-b border-theme-border">
+            ⚠️ {error}
+          </div>
         )}
         
         {!loading && !error && (
           <>
             {filteredFolders.length > 0 ? (
-              <div className="border border-player-border">
+              <div className="border-b border-theme-border/40">
                 <ul className="flex flex-col">
                   {filteredFolders.map((folder, index) => (
                     <li
                       key={index}
                       onClick={() => handleFolderClick(folder)}
-                      className="snap-start text-text-light hover:bg-background-hover text-xs break-all border-b border-player-border p-1.5 cursor-pointer transition-colors"
+                      className="snap-start text-theme-text hover:bg-theme-accent/20 hover:text-white text-xs break-all border-b border-theme-border/40 p-2 cursor-pointer transition-colors"
                     >
-                      <span>{folder}</span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="text-theme-muted text-[10px]">📁</span>
+                        {folder}
+                      </span>
                     </li>
                   ))}
                 </ul>
               </div>
             ) : (
-              <div className="p-3 text-xs text-gray-400 text-center">
+              <div className="p-4 text-xs text-theme-muted text-center italic">
                 {searchTerm ? 'Keine Alben gefunden' : 'Keine Alben vorhanden'}
               </div>
             )}

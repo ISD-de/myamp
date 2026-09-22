@@ -50,7 +50,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const [sampleRate, setSampleRate] = useState<number | null>(null);
   const [isEqualizerOpen, setIsEqualizerOpen] = useState(false);
   
-  // Initialisierung AudioContext & SourceNode - Einmalig pro Audio-Element
+  // Initialisierung AudioContext & SourceNode
   const handleAudioRef = (node: HTMLAudioElement | null) => {
     if (!node) return;
     
@@ -178,32 +178,36 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   };
   
   return (
-    <div className="flex flex-col gap-1 ">
-      <div className="bg-player-bg border-2 border-player-border p-2 font-mono select-none text-text">
-        <div className="bg-black border border-player-border p-2 flex flex-col justify-between h-17 relative overflow-hidden">
-          <div className="flex items-center justify-between text-xs text-player-text-muted font-bold tracking-tight">
-            <div className="flex flex-col gap-0.5 text-[8px] text-player-text-disabled leading-none">
-              <span className={isPlaying ? 'text-player-text-highlight' : ''}>▲ PLAY</span>
-              <span className={!isPlaying && currentTime > 0 ? 'text-player-text-highlight' : ''}>❚❚ PAUSE</span>
+    <div className="flex flex-col gap-1 transition-colors duration-300">
+      <div className="bg-theme-panel border-2 border-theme-border p-2 font-mono select-none text-theme-text transition-colors duration-300">
+        
+        {/* LCD DISPLAY PANEL */}
+        <div className="bg-black/80 border border-theme-border p-2 flex flex-col justify-between h-20 relative overflow-hidden rounded-sm">
+          <div className="flex items-center justify-between text-xs text-theme-muted font-bold tracking-tight">
+            <div className="flex flex-col gap-0.5 text-[8px] leading-none">
+              <span className={isPlaying ? 'text-theme-border font-bold' : 'text-theme-muted/40'}>▲ PLAY</span>
+              <span className={!isPlaying && currentTime > 0 ? 'text-theme-accent font-bold' : 'text-theme-muted/40'}>❚❚ PAUSE</span>
             </div>
-            <div className="flex-1 ml-3 overflow-hidden whitespace-nowrap text-ellipsis text-right text-player-text-highlight font-mono">
+            <div className="flex-1 ml-3 overflow-hidden whitespace-nowrap text-ellipsis text-right text-theme-border font-mono tracking-wider font-bold">
               {currentSong ? currentSong.replace('.mp3', '') : 'WINAMP: NO FILE LOADED'}
             </div>
           </div>
-          <div className="flex justify-between items-end text-[10px] text-player-text-disable">
+          
+          <div className="flex justify-between items-end text-[10px]">
             <div className="flex items-center gap-2">
-              <span className="text-[14px] font-bold text-player-text-highlight font-mono leading-none">
+              <span className="text-[14px] font-bold text-theme-border font-mono leading-none">
                 {formatTime(currentTime)}
               </span>
-              <span className="text-xs text-player-text-info">/ {formatTime(duration)}</span>
+              <span className="text-xs text-theme-muted">/ {formatTime(duration)}</span>
             </div>
-            <div className="flex gap-2 text-[9px] font-bold text-player-text-disabled">
-              <span><strong className="text-player-text-highlight">{bitrate}</strong> KBPS</span>
-              <span><strong className="text-player-text-highlight">{sampleRate}</strong> KHZ</span>
-              <span className="text-player-text-highlight">STEREO</span>
+            <div className="flex gap-2 text-[9px] font-bold text-theme-muted">
+              <span><strong className="text-theme-text">{bitrate ?? '--'}</strong> KBPS</span>
+              <span><strong className="text-theme-text">{sampleRate ?? '--'}</strong> KHZ</span>
+              <span className="text-theme-border">STEREO</span>
             </div>
           </div>
-          <div>
+          
+          <div className="mt-1">
             <input
               type="range"
               min="0"
@@ -211,17 +215,19 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
               value={currentTime}
               onChange={handleSeek}
               disabled={!audioSrc}
-              className="w-full h-1 bg-player-bg appearance-none cursor-pointer accent-player-text-highlight"
+              className="w-full h-1 bg-theme-bg appearance-none cursor-pointer accent-theme-border"
             />
           </div>
         </div>
-        <div className="flex items-center justify-between px-1 mb-2 bg-player-bg p-1.5 border border-player-border">
+        
+        {/* VOLUME BAR */}
+        <div className="flex items-center justify-between px-1 my-1.5 bg-theme-bg/60 p-1.5 border border-theme-border/50 rounded">
           <button
             onClick={toggleMute}
-            className={`px-2 py-0.5 border text-xs font-bold transition active:scale-95 ${
+            className={`px-2 py-0.5 border text-xs font-bold transition active:scale-95 cursor-pointer rounded ${
               isMuted
-                ? 'bg-[#5a1c1c] text-[#ff6666] border-[#8b0000]'
-                : 'bg-linear-to-b from-[#4a4e57] to-[#2b2d33] text-white border-[#5a5f6b]'
+                ? 'bg-red-950/80 text-red-400 border-red-700'
+                : 'bg-theme-panel text-theme-text border-theme-border hover:bg-theme-accent/20'
             }`}
           >
             {isMuted ? '🔇 MUTE' : '🔊 VOL'}
@@ -234,24 +240,26 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
               step="0.01"
               value={isMuted ? 0 : volume}
               onChange={handleVolumeChange}
-              className="w-full h-2 bg-player-border rounded appearance-none cursor-pointer accent-player-accent"
+              className="w-full h-1.5 bg-theme-bg rounded appearance-none cursor-pointer accent-theme-accent"
             />
           </div>
         </div>
-        <div className="flex items-center justify-between pt-1 border-t border-player-divider">
-          <div className="flex items-center mt-1 gap-1">
+        
+        {/* MEDIA BUTTONS & CONTROLS */}
+        <div className="flex items-center justify-between pt-1 border-t border-theme-border/40">
+          <div className="flex items-center gap-1">
             <button
               onClick={onPrevSong}
               disabled={!onPrevSong || !audioSrc}
-              className="w-8 h-7 bg-linear-to-b from-[#4f535d] via-[#353840] to-[#222429] hover:from-[#5c616d] text-white font-bold border border-[#555a66] rounded shadow-inner active:border-[#111] text-xs flex items-center justify-center"
-              title="Previous"
+              className="w-8 h-7 bg-theme-bg hover:bg-theme-accent/30 disabled:opacity-40 text-theme-text font-bold border border-theme-border rounded active:scale-95 text-xs flex items-center justify-center transition cursor-pointer"
+              title="Vorheriger Song"
             >
               ⏮
             </button>
             <button
               onClick={handlePlay}
               disabled={!audioSrc}
-              className="w-8 h-7 bg-linear-to-b from-[#4f535d] via-[#353840] to-[#222429] hover:from-[#5c616d] text-white font-bold border border-[#555a66] rounded shadow-inner active:border-[#111] text-xs flex items-center justify-center"
+              className="w-8 h-7 bg-theme-bg hover:bg-theme-accent/30 disabled:opacity-40 text-theme-text font-bold border border-theme-border rounded active:scale-95 text-xs flex items-center justify-center transition cursor-pointer"
               title="Play"
             >
               ▶
@@ -259,7 +267,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             <button
               onClick={handlePause}
               disabled={!audioSrc}
-              className="w-8 h-7 bg-linear-to-b from-[#4f535d] via-[#353840] to-[#222429] hover:from-[#5c616d] text-white font-bold border border-[#555a66] rounded shadow-inner active:border-[#111] text-xs flex items-center justify-center"
+              className="w-8 h-7 bg-theme-bg hover:bg-theme-accent/30 disabled:opacity-40 text-theme-text font-bold border border-theme-border rounded active:scale-95 text-xs flex items-center justify-center transition cursor-pointer"
               title="Pause"
             >
               ❚❚
@@ -267,7 +275,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             <button
               onClick={handleStop}
               disabled={!audioSrc}
-              className="w-8 h-7 bg-linear-to-b from-[#4f535d] via-[#353840] to-[#222429] hover:from-[#5c616d] text-white font-bold border border-[#555a66] rounded shadow-inner active:border-[#111] text-xs flex items-center justify-center"
+              className="w-8 h-7 bg-theme-bg hover:bg-theme-accent/30 disabled:opacity-40 text-theme-text font-bold border border-theme-border rounded active:scale-95 text-xs flex items-center justify-center transition cursor-pointer"
               title="Stop"
             >
               ■
@@ -275,15 +283,16 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             <button
               onClick={onNextSong}
               disabled={!onNextSong || !audioSrc}
-              className="w-8 h-7 bg-linear-to-b from-[#4f535d] via-[#353840] to-[#222429] hover:from-[#5c616d] text-white font-bold border border-[#555a66] rounded shadow-inner active:border-[#111] text-xs flex items-center justify-center"
-              title="Next"
+              className="w-8 h-7 bg-theme-bg hover:bg-theme-accent/30 disabled:opacity-40 text-theme-text font-bold border border-theme-border rounded active:scale-95 text-xs flex items-center justify-center transition cursor-pointer"
+              title="Nächster Song"
             >
               ⏭
             </button>
           </div>
+          
           <div className="flex items-center gap-1.5">
             <button
-              className="w-7 h-7 bg-linear-to-b from-[#4f535d] to-[#222429] text-white text-xs border border-[#555a66] rounded flex items-center justify-center"
+              className="w-7 h-7 bg-theme-bg hover:bg-theme-accent/30 text-theme-text text-xs border border-theme-border rounded flex items-center justify-center transition active:scale-95 cursor-pointer"
               title="Media Explorer & Playlist öffnen"
               onClick={onOpenPlaylist}
             >
@@ -291,10 +300,10 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             </button>
             <button
               onClick={() => setIsEqualizerOpen(!isEqualizerOpen)}
-              className={`px-1.5 h-7 text-[12px] font-bold border rounded ${
+              className={`px-1.5 h-7 text-[12px] font-bold border rounded transition active:scale-95 cursor-pointer ${
                 isEqualizerOpen
-                  ? 'bg-[#00ffcc] text-black border-[#00ffcc] shadow-[0_0_5px_#00ffcc]'
-                  : 'bg-[#222429] text-[#777] border-[#444]'
+                  ? 'bg-theme-border text-black border-theme-border shadow-[0_0_8px_var(--theme-glow)]'
+                  : 'bg-theme-bg text-theme-muted border-theme-border/50 hover:text-theme-text'
               }`}
             >
               EQ
@@ -303,16 +312,17 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
               type="button"
               onClick={onToggleShuffle}
               title={isShuffle ? 'Zufallswiedergabe (Shuffle ON)' : 'Reihenfolge (Shuffle OFF)'}
-              className={`px-2 py-1 border text-xs font-bold rounded transition active:scale-95 cursor-pointer ${
+              className={`px-2 h-7 border text-xs font-bold rounded transition active:scale-95 cursor-pointer flex items-center justify-center ${
                 isShuffle
-                  ? 'bg-[#00ffcc] text-black border-[#00ffcc] shadow-[0_0_5px_#00ffcc]'
-                  : 'bg-[#222429] text-[#777] border-[#444]'
+                  ? 'bg-theme-accent text-white border-theme-accent shadow-[0_0_8px_var(--theme-glow)]'
+                  : 'bg-theme-bg text-theme-muted border-theme-border/50 hover:text-theme-text'
               }`}
             >
               {isShuffle ? 'MIX' : '123'}
             </button>
           </div>
         </div>
+        
         <audio
           ref={handleAudioRef}
           onTimeUpdate={() => {
@@ -326,7 +336,8 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           className="hidden"
         />
       </div>
-      <div className={isEqualizerOpen ? 'visible' : 'hidden'}>
+      
+      <div className={isEqualizerOpen ? 'block' : 'hidden'}>
         <Equalizer audioContext={audioContext} sourceNode={sourceNode} />
       </div>
     </div>

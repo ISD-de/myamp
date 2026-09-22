@@ -7,6 +7,7 @@ import Visualizer, { VisualizerRef } from '@/components/Visualizer/Visualizer';
 import PresetSelector from '@/components/VisualizerPresetsList/VisualizerPresetsList';
 import AudioPlayer from '@/components/AudioPlayer/AudioPlayer';
 import Playlist, { PlaylistItem } from '@/components/Playlist/Playlist';
+import ThemeSelector from '@/components/ThemeSelector/ThemeSelector';
 
 const PLAYLIST_CACHE_KEY = 'music_player_saved_playlist';
 const CURRENT_INDEX_CACHE_KEY = 'music_player_current_index';
@@ -305,19 +306,9 @@ export default function Home(): React.JSX.Element {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isPlaylistOpen]);
   
-  
-  
-  useEffect(() => {
-    console.log('--- Visualizer Props Status ---', {
-      audioElement: !!audioElement,
-      audioContext: !!audioContext,
-      sourceNode: !!sourceNode,
-      currentSong,
-    });
-  }, [audioElement, audioContext, sourceNode, currentSong]);
-  
   return (
-    <main className="relative min-h-screen w-full bg-black font-mono overflow-hidden">
+    <main className="relative min-h-screen w-full bg-theme-bg text-theme-text font-mono overflow-hidden transition-colors duration-300">
+      {/* VISUALIZER BACKGROUND */}
       <div
         ref={visualizerContainerRef}
         className="fixed inset-0 z-0 w-full h-full pointer-events-none"
@@ -332,9 +323,12 @@ export default function Home(): React.JSX.Element {
         )}
       </div>
       
+      {/* FLOATING PLAYER & CONTROL PANELS */}
       <div className="relative z-10 p-2 flex flex-col gap-2 pointer-events-auto">
-        <div className="w-full md:w-125 flex flex-col gap-1">
-          <div className="bg-player-bg/90 backdrop-blur-md border-2 border-player-border shadow-2xl">
+        <div className="w-full md:w-125 flex flex-col gap-1.5">
+          
+          {/* MAIN PLAYER CONTAINER */}
+          <div className="bg-theme-panel/90 backdrop-blur-md border-2 border-theme-border shadow-2xl transition-colors duration-300">
             <AudioPlayer
               audioSrc={audioSrc}
               currentSong={currentSong}
@@ -344,7 +338,6 @@ export default function Home(): React.JSX.Element {
               isShuffle={isShuffle}
               onToggleShuffle={handleToggleShuffle}
               onAudioElementReady={(node, ctx, source) => {
-                // Nur aktualisieren, wenn ECHTE Instanzen übergeben werden, niemals auf null zurücksetzen!
                 if (node && ctx && source) {
                   setAudioElement(node);
                   setAudioContext(ctx);
@@ -354,9 +347,17 @@ export default function Home(): React.JSX.Element {
             />
           </div>
           
-          <div className="flex flex-col gap-1 border-2 border-player-border bg-player-bg/90 backdrop-blur-md p-1 shadow-2xl">
-            <div className="border-b border-player-border/50 pb-1">
-              <span className="text-xs text-text-light font-bold">MEDIA LIBRARY</span>
+          {/* THEME SELECTOR BAR */}
+          <div className="shadow-2xl">
+            <ThemeSelector />
+          </div>
+          
+          {/* VISUALIZER PRESET CONTROLLER */}
+          <div className="flex flex-col gap-1 border-2 border-theme-border bg-theme-panel/90 backdrop-blur-md p-1.5 shadow-2xl transition-colors duration-300">
+            <div className="border-b border-theme-border/50 pb-1">
+              <span className="text-xs text-theme-text font-bold uppercase tracking-wider">
+                Media Library & Visuals
+              </span>
             </div>
             
             <div className="flex items-center justify-between gap-1 pt-0.5">
@@ -365,10 +366,10 @@ export default function Home(): React.JSX.Element {
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setAutoPresetEnabled((prev) => !prev)}
-                  className={`text-xs font-semibold px-2 py-1 rounded border transition active:scale-95 whitespace-nowrap ${
+                  className={`text-xs font-semibold px-2 py-1 rounded border transition active:scale-95 whitespace-nowrap cursor-pointer ${
                     autoPresetEnabled
-                      ? 'bg-purple-600 text-white border-purple-400'
-                      : 'bg-black/40 text-gray-400 border-player-border hover:text-white'
+                      ? 'bg-theme-accent text-white border-theme-glow shadow-sm'
+                      : 'bg-black/40 text-theme-muted border-theme-border hover:text-theme-text'
                   }`}
                 >
                   🎲 Auto {autoPresetEnabled ? 'ON' : 'OFF'}
@@ -377,7 +378,7 @@ export default function Home(): React.JSX.Element {
                 <button
                   onClick={() => visualizerRef.current?.nextPreset()}
                   disabled={!currentSong}
-                  className="text-white text-xs font-semibold px-2 py-1 bg-black/40 hover:bg-black/60 border border-player-border rounded transition active:scale-95 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="text-theme-text text-xs font-semibold px-2 py-1 bg-black/40 hover:bg-black/60 border border-theme-border rounded transition active:scale-95 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
                   🔀 Nächstes
                 </button>
@@ -387,16 +388,17 @@ export default function Home(): React.JSX.Element {
         </div>
       </div>
       
+      {/* MEDIA EXPLORER & PLAYLIST MODAL */}
       {isPlaylistOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center">
-          <div className="bg-player-bg border-2 border-player-border rounded-lg shadow-2xl w-[90vw] h-[90vh] flex flex-col overflow-hidden">
-            <div className="p-2 border-b border-player-border bg-background/80 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2 text-xs font-bold text-text-light">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-2">
+          <div className="bg-theme-panel border-2 border-theme-border rounded-lg shadow-2xl w-[90vw] h-[90vh] flex flex-col overflow-hidden transition-colors duration-300">
+            <div className="p-2 border-b border-theme-border bg-theme-bg/80 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2 text-xs font-bold text-theme-text">
                 <span>🎵 MEDIA EXPLORER & PLAYLIST</span>
               </div>
               <button
                 onClick={() => setIsPlaylistOpen(false)}
-                className="text-gray-400 hover:text-white text-sm px-2 py-0.5 border border-player-border rounded bg-player-bg transition"
+                className="text-theme-muted hover:text-theme-text text-sm px-2 py-0.5 border border-theme-border rounded bg-theme-panel transition active:scale-95 cursor-pointer"
               >
                 ✕ Schließen
               </button>
