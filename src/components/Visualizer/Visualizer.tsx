@@ -7,6 +7,7 @@ import butterchurnPresets from 'butterchurn-presets';
 export interface VisualizerRef {
   nextPreset: () => void;
   loadPreset: (presetData: any, blendTime?: number) => void;
+  loadRandomPreset: (blendTime?: number) => void;
 }
 
 interface VisualizerProps {
@@ -39,6 +40,18 @@ export const Visualizer = forwardRef<VisualizerRef, VisualizerProps>(({ audioEle
       if (visualizerInstanceRef.current && presetData) {
         visualizerInstanceRef.current.loadPreset(presetData, blendTime);
       }
+    },
+    // NEU: Zufälliges Preset laden
+    loadRandomPreset: (blendTime: number = 2.0) => {
+      const keys = presetKeysRef.current;
+      if (keys.length === 0 || !visualizerInstanceRef.current) return;
+      
+      const randomIndex = Math.floor(Math.random() * keys.length);
+      currentPresetIndexRef.current = randomIndex;
+      const randomKey = keys[randomIndex];
+      const preset = presetsRef.current[randomKey];
+      
+      visualizerInstanceRef.current.loadPreset(preset, blendTime);
     },
   }));
   
