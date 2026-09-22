@@ -14,6 +14,9 @@ interface AudioPlayerProps {
   ) => void;
   onNextSong?: () => void;
   onPrevSong?: () => void;
+  onOpenPlaylist?: () => void;
+  isShuffle: boolean;
+  onToggleShuffle: () => void;
 }
 
 export const AudioPlayer: React.FC<AudioPlayerProps> = ({
@@ -21,7 +24,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                                                           currentSong,
                                                           onAudioElementReady,
                                                           onNextSong,
-                                                          onPrevSong
+                                                          onPrevSong,onOpenPlaylist
                                                         }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
@@ -72,7 +75,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   useEffect(() => {
     if (audioSrc && audioRef.current) {
       if (audioContextRef.current?.state === 'suspended') {
-        audioContextRef.current.resume();
+        audioContextRef.current.resume().then();
       }
       audioRef.current.src = audioSrc;
       audioRef.current.load();
@@ -239,7 +242,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             <button
               onClick={handlePlay}
               disabled={!audioSrc}
-              className="w-8 h-7 bg-gradient-to-b from-[#4f535d] via-[#353840] to-[#222429] hover:from-[#5c616d] text-white font-bold border border-[#555a66] rounded shadow-inner active:border-[#111] text-xs flex items-center justify-center"
+              className="w-8 h-7 bg-linear-to-b from-[#4f535d] via-[#353840] to-[#222429] hover:from-[#5c616d] text-white font-bold border border-[#555a66] rounded shadow-inner active:border-[#111] text-xs flex items-center justify-center"
               title="Play"
             >
               ▶
@@ -247,7 +250,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             <button
               onClick={handlePause}
               disabled={!audioSrc}
-              className="w-8 h-7 bg-gradient-to-b from-[#4f535d] via-[#353840] to-[#222429] hover:from-[#5c616d] text-white font-bold border border-[#555a66] rounded shadow-inner active:border-[#111] text-xs flex items-center justify-center"
+              className="w-8 h-7 bg-linear-to-b from-[#4f535d] via-[#353840] to-[#222429] hover:from-[#5c616d] text-white font-bold border border-[#555a66] rounded shadow-inner active:border-[#111] text-xs flex items-center justify-center"
               title="Pause"
             >
               ❚❚
@@ -255,7 +258,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             <button
               onClick={handleStop}
               disabled={!audioSrc}
-              className="w-8 h-7 bg-gradient-to-b from-[#4f535d] via-[#353840] to-[#222429] hover:from-[#5c616d] text-white font-bold border border-[#555a66] rounded shadow-inner active:border-[#111] text-xs flex items-center justify-center"
+              className="w-8 h-7 bg-linear-to-b from-[#4f535d] via-[#353840] to-[#222429] hover:from-[#5c616d] text-white font-bold border border-[#555a66] rounded shadow-inner active:border-[#111] text-xs flex items-center justify-center"
               title="Stop"
             >
               ■
@@ -263,7 +266,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             <button
               onClick={onNextSong}
               disabled={!onNextSong || !audioSrc}
-              className="w-8 h-7 bg-gradient-to-b from-[#4f535d] via-[#353840] to-[#222429] hover:from-[#5c616d] text-white font-bold border border-[#555a66] rounded shadow-inner active:border-[#111] text-xs flex items-center justify-center"
+              className="w-8 h-7 bg-linear-to-b from-[#4f535d] via-[#353840] to-[#222429] hover:from-[#5c616d] text-white font-bold border border-[#555a66] rounded shadow-inner active:border-[#111] text-xs flex items-center justify-center"
               title="Next"
             >
               ⏭
@@ -271,8 +274,9 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           </div>
           <div className="flex items-center gap-1.5">
             <button
-              className="w-7 h-7 bg-gradient-to-b from-[#4f535d] to-[#222429] text-white text-xs border border-[#555a66] rounded flex items-center justify-center"
-              title="Open File"
+              className="w-7 h-7 bg-linear-to-b from-[#4f535d] to-[#222429] text-white text-xs border border-[#555a66] rounded flex items-center justify-center"
+              title="Media Explorer & Playlist öffnen"
+              onClick={onOpenPlaylist}
             >
               ⏏
             </button>

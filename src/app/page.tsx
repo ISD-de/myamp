@@ -198,7 +198,7 @@ export default function Home(): React.JSX.Element {
         console.warn(`Fehler beim Aktivieren von Fullscreen: ${err.message}`);
       });
     } else {
-      document.exitFullscreen();
+      document.exitFullscreen().then();
     }
   };
   
@@ -241,6 +241,7 @@ export default function Home(): React.JSX.Element {
               currentSong={currentSong}
               onNextSong={handleNextSong}
               onPrevSong={handlePrevSong}
+              onOpenPlaylist={() => setIsPlaylistOpen(true)}
               onAudioElementReady={(node, ctx, source) => {
                 if (node && node !== audioElement) {
                   setAudioElement(node);
