@@ -2,24 +2,19 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import DirectoryScanner from '@/components/DirectoryScanner/DirectoryScanner';
 import SongLister from '@/components/SongLister/SongLister';
 import PresetSelector from '@/components/VisualizerPresetsList/VisualizerPresetsList';
 import AudioPlayer from '@/components/AudioPlayer/AudioPlayer';
 import Playlist, { PlaylistItem } from '@/components/Playlist/Playlist';
 import ThemeSelector from '@/components/ThemeSelector/ThemeSelector';
 import type { VisualizerRef } from '@/components/Visualizer/Visualizer';
+import FolderLister from '@/components/FolderLister/FolderLister';
 
 // WICHTIG: Visualizer nur auf dem Client (ohne SSR) laden, wegen butterchurn & window-Objekt
 const Visualizer = dynamic(
   () => import('@/components/Visualizer/Visualizer'),
   { ssr: false }
 );
-
-const PLAYLIST_CACHE_KEY = 'music_player_saved_playlist';
-const CURRENT_INDEX_CACHE_KEY = 'music_player_current_index';
-const SHUFFLE_MODE_CACHE_KEY = 'music_player_is_shuffle';
-const PLAYED_IDS_CACHE_KEY = 'music_player_played_ids';
 
 export default function Home(): React.JSX.Element {
   
@@ -46,7 +41,6 @@ export default function Home(): React.JSX.Element {
   const [currentIndex, setCurrentIndex] = useState<number>(-1);
   
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
-  const [shouldAutoPlay, setShouldAutoPlay] = useState<boolean>(false);
   
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
@@ -70,48 +64,43 @@ export default function Home(): React.JSX.Element {
     return `${item.folderName}/${item.songName}`;
   };
   
-  // 1. LOCALSTORAGE INITIALISIERUNG
+  // 1. PLAYLIST VON DER SERVER-API LADEN beim Start (ohne Autoplay-Zwang)
   useEffect(() => {
-    try {
-      const savedPlaylist = localStorage.getItem(PLAYLIST_CACHE_KEY);
-      const savedIndex = localStorage.getItem(CURRENT_INDEX_CACHE_KEY);
-      const savedShuffle = localStorage.getItem(SHUFFLE_MODE_CACHE_KEY);
-      const savedPlayedIds = localStorage.getItem(PLAYED_IDS_CACHE_KEY);
-      
-      if (savedPlaylist) {
-        const parsedPlaylist: PlaylistItem[] = JSON.parse(savedPlaylist);
-        setPlaylist(parsedPlaylist);
-        
-        if (savedIndex !== null) {
-          const parsedIndex = parseInt(savedIndex, 10);
-          if (!isNaN(parsedIndex) && parsedIndex >= 0 && parsedIndex < parsedPlaylist.length) {
-            setCurrentIndex(parsedIndex);
-          } else if (parsedPlaylist.length > 0) {
-            setCurrentIndex(0);
-          }
+    fetch('/api/playlist')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && Array.isArray(data.playlist)) {
+          setPlaylist(data.playlist);
+          if (data.currentIndex !== undefined) setCurrentIndex(data.currentIndex);
+          if (data.isShuffle !== undefined) setIsShuffle(data.isShuffle);
+          if (Array.isArray(data.playedIds)) setPlayedIds(data.playedIds);
         }
-        
-        if (savedShuffle !== null) {
-          setIsShuffle(JSON.parse(savedShuffle));
-        }
-        
-        if (savedPlayedIds) {
-          const parsedPlayed = JSON.parse(savedPlayedIds);
-          if (Array.isArray(parsedPlayed)) {
-            setPlayedIds(parsedPlayed);
-          }
-        }
-        
-        if (parsedPlaylist.length > 0) {
-          setShouldAutoPlay(true);
-        }
-      }
-    } catch (error) {
-      console.warn('Fehler beim Laden aus dem localStorage:', error);
-    } finally {
-      setIsLoaded(true);
-    }
+      })
+      .catch((err) => {
+        console.warn('Fehler beim Laden der Server-Playlist:', err);
+      })
+      .finally(() => {
+        setIsLoaded(true);
+      });
   }, []);
+  
+  // Hilfsfunktion zum Speichern auf dem Server
+  const saveToServer = (updatedData: {
+    playlist?: PlaylistItem[];
+    currentIndex?: number;
+    isShuffle?: boolean;
+    playedIds?: string[];
+  }) => {
+    if (!isLoaded) return;
+    
+    fetch('/api/playlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedData),
+    }).catch((err) => {
+      console.warn('Fehler beim Speichern auf dem Server:', err);
+    });
+  };
   
   // 2. SONG-TRACKING
   useEffect(() => {
@@ -122,67 +111,20 @@ export default function Home(): React.JSX.Element {
     setPlayedIds((prev) => {
       if (!prev.includes(uniqueId)) {
         const updated = [...prev, uniqueId];
-        localStorage.setItem(PLAYED_IDS_CACHE_KEY, JSON.stringify(updated));
+        saveToServer({ playedIds: updated });
         return updated;
       }
       return prev;
     });
   }, [currentIndex, isLoaded]);
   
-  // 3. PERSISTENZ IM LOCALSTORAGE
+  // 3. SERVER-PERSISTENZ BEI ÄNDERUNGEN
   useEffect(() => {
     if (!isLoaded) return;
-    
-    try {
-      localStorage.setItem(PLAYLIST_CACHE_KEY, JSON.stringify(playlist));
-      localStorage.setItem(CURRENT_INDEX_CACHE_KEY, currentIndex.toString());
-      localStorage.setItem(SHUFFLE_MODE_CACHE_KEY, JSON.stringify(isShuffle));
-      localStorage.setItem(PLAYED_IDS_CACHE_KEY, JSON.stringify(playedIds));
-    } catch (error) {
-      console.warn('Fehler beim Speichern im localStorage:', error);
-    }
+    saveToServer({ playlist, currentIndex, isShuffle, playedIds });
   }, [playlist, currentIndex, isShuffle, playedIds, isLoaded]);
   
-  // 4. AUTOSTART TRIGGER (Sicherer Umgang mit Browser-Autoplay-Richtlinien)
-  useEffect(() => {
-    if (!shouldAutoPlay || !audioElement || !audioSrc) return;
-    
-    const handleFirstInteraction = () => {
-      if (audioContext && audioContext.state === 'suspended') {
-        audioContext.resume();
-      }
-      
-      audioElement
-        .play()
-        .then(() => {
-          setShouldAutoPlay(false);
-          window.removeEventListener('click', handleFirstInteraction);
-          window.removeEventListener('keydown', handleFirstInteraction);
-        })
-        .catch((err) => {
-          console.warn('Autoplay nach Interaktion fehlgeschlagen:', err);
-        });
-    };
-    
-    // Direkt versuchen abzuspielen
-    audioElement
-      .play()
-      .then(() => {
-        setShouldAutoPlay(false);
-      })
-      .catch(() => {
-        // Falls der Browser es blockiert, auf den ersten Klick oder Tastendruck lauschen
-        window.addEventListener('click', handleFirstInteraction, { once: true });
-        window.addEventListener('keydown', handleFirstInteraction, { once: true });
-      });
-    
-    return () => {
-      window.removeEventListener('click', handleFirstInteraction);
-      window.removeEventListener('keydown', handleFirstInteraction);
-    };
-  }, [shouldAutoPlay, audioElement, audioSrc, audioContext]);
-  
-  // 5. AUTO VISUALIZER PRESET BEI SONGWECHSEL
+  // 4. AUTO VISUALIZER PRESET BEI SONGWECHSEL
   useEffect(() => {
     if (currentSong && autoPresetEnabled && visualizerRef.current) {
       visualizerRef.current.loadRandomPreset(2.0);
@@ -246,7 +188,7 @@ export default function Home(): React.JSX.Element {
     
     setPlayedIds((prev) => {
       const updated = prev.filter((playedId) => playedId !== id);
-      localStorage.setItem(PLAYED_IDS_CACHE_KEY, JSON.stringify(updated));
+      saveToServer({ playedIds: updated });
       return updated;
     });
   };
@@ -255,23 +197,21 @@ export default function Home(): React.JSX.Element {
     setPlaylist([]);
     setCurrentIndex(-1);
     setPlayedIds([]);
-    localStorage.removeItem(PLAYLIST_CACHE_KEY);
-    localStorage.removeItem(CURRENT_INDEX_CACHE_KEY);
-    localStorage.removeItem(SHUFFLE_MODE_CACHE_KEY);
-    localStorage.removeItem(PLAYED_IDS_CACHE_KEY);
+    saveToServer({ playlist: [], currentIndex: -1, isShuffle: false, playedIds: [] });
   };
   
   const handleToggleShuffle = () => {
     setIsShuffle((prev) => {
       const nextShuffle = !prev;
+      let newPlayed = playedIds;
       if (nextShuffle && currentItem) {
-        const initialPlayed = [getSongUniqueId(currentItem)];
-        setPlayedIds(initialPlayed);
-        localStorage.setItem(PLAYED_IDS_CACHE_KEY, JSON.stringify(initialPlayed));
+        newPlayed = [getSongUniqueId(currentItem)];
+        setPlayedIds(newPlayed);
       } else {
         setPlayedIds([]);
-        localStorage.setItem(PLAYED_IDS_CACHE_KEY, JSON.stringify([]));
+        newPlayed = [];
       }
+      saveToServer({ isShuffle: nextShuffle, playedIds: newPlayed });
       return nextShuffle;
     });
   };
@@ -302,7 +242,7 @@ export default function Home(): React.JSX.Element {
         
         const resetIds = currentUniqueId ? [currentUniqueId] : [];
         setPlayedIds(resetIds);
-        localStorage.setItem(PLAYED_IDS_CACHE_KEY, JSON.stringify(resetIds));
+        saveToServer({ playedIds: resetIds });
       }
       
       const randomItem =
@@ -475,7 +415,7 @@ export default function Home(): React.JSX.Element {
             
             <div className="p-2 grid grid-cols-1 md:grid-cols-3 gap-2 flex-1 min-h-0 overflow-hidden">
               <div className="h-full overflow-hidden">
-                <DirectoryScanner onSelectFolder={onSelectFolder}/>
+                <FolderLister onSelectFolder={onSelectFolder}/>
               </div>
               
               <div className="h-full overflow-hidden">
@@ -503,7 +443,7 @@ export default function Home(): React.JSX.Element {
       
       {/* Rotes Fehler-Overlay falls etwas abstürzt */}
       {lastError && (
-        <div className="fixed inset-x-0 top-0 z-9999 bg-red-600 text-white p-4 text-xs font-mono shadow-2xl overflow-auto max-h-40">
+        <div className="fixed inset-x-0 top-0 z-[9999] bg-red-600 text-white p-4 text-xs font-mono shadow-2xl overflow-auto max-h-40">
           <div className="font-bold">⚠️ CRASH ERKANNT:</div>
           <div>{lastError}</div>
           <button

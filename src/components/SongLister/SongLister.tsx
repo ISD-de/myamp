@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import * as musicMetadata from 'music-metadata-browser';
-import { getSongs } from '@/actions/getSongs';
 
 interface SongListerProps {
   folderName: string | null;
@@ -29,12 +28,8 @@ export const SongLister = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Dynamischer Cache-Key pro Ordner
-  const cacheKey = folderName ? `music_songs_cache_${folderName}` : null;
-  const metaCacheKey = folderName ? `music_meta_cache_${folderName}` : null;
-  
   useEffect(() => {
-    if (!folderName || !cacheKey || !metaCacheKey) {
+    if (!folderName) {
       setSongs([]);
       setMetadataMap({});
       setSearchTerm('');
@@ -45,35 +40,21 @@ export const SongLister = ({
       setLoading(true);
       setError(null);
       
-      // Metadaten-Cache laden
-      const cachedMeta = localStorage.getItem(metaCacheKey);
-      if (cachedMeta) {
-        try {
-          setMetadataMap(JSON.parse(cachedMeta));
-        } catch (e) {
-          localStorage.removeItem(metaCacheKey);
-        }
-      }
-      
-      // Songs-Cache laden
-      const cachedData = localStorage.getItem(cacheKey);
-      if (cachedData) {
-        try {
-          const parsed = JSON.parse(cachedData);
-          setSongs(parsed);
-          setLoading(false);
-          return;
-        } catch (e) {
-          localStorage.removeItem(cacheKey);
-        }
-      }
-      
       try {
-        const result = await getSongs(folderName);
-        setSongs(result);
-        localStorage.setItem(cacheKey, JSON.stringify(result));
+        const response = await fetch(`/api/songs?folder=${encodeURIComponent(folderName)}`);
+        const data = await response.json();
+        
+        if (data.success && Array.isArray(data.songs)) {
+          setSongs(data.songs);
+          if (data.metadataMap) {
+            setMetadataMap(data.metadataMap);
+          }
+        } else {
+          setError(data.error || 'Fehler beim Laden der Songs');
+          setSongs([]);
+        }
       } catch (err: any) {
-        setError(err.message);
+        setError(err.message || 'Netzwerkfehler beim Laden der Songs');
         setSongs([]);
       } finally {
         setLoading(false);
@@ -81,14 +62,28 @@ export const SongLister = ({
     };
     
     loadSongs();
-  }, [folderName, cacheKey, metaCacheKey]);
+  }, [folderName]);
   
-  // Metadaten für gefundene Songs parsen
+  // Funktion zum Speichern einzelner Metadaten auf dem Server
+  const saveMetadataToServer = async (song: string, meta: SongMetadata) => {
+    if (!folderName) return;
+    try {
+      await fetch('/api/songs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folder: folderName, song, metadata: meta }),
+      });
+    } catch (err) {
+      console.warn('Fehler beim Speichern der Metadaten auf dem Server:', err);
+    }
+  };
+  
+  // Metadaten für Songs parsen, die noch nicht im Server-Cache waren
   useEffect(() => {
-    if (!folderName || songs.length === 0 || !metaCacheKey) return;
+    if (!folderName || songs.length === 0) return;
     
     songs.forEach(async (song) => {
-      if (metadataMap[song]) return; // Bereits geparst
+      if (metadataMap[song]) return; // Bereits im Cache vorhanden
       
       const audioUrl = `/api/stream?folder=${encodeURIComponent(
         folderName
@@ -108,14 +103,16 @@ export const SongLister = ({
         
         setMetadataMap((prev) => {
           const updated = { ...prev, [song]: parsedMeta };
-          localStorage.setItem(metaCacheKey, JSON.stringify(updated));
           return updated;
         });
+        
+        // Direkt persistent auf dem Server abspeichern
+        saveMetadataToServer(song, parsedMeta);
       } catch (err) {
         console.warn(`Metadaten konnten für ${song} nicht geladen werden:`, err);
       }
     });
-  }, [songs, folderName, metaCacheKey]);
+  }, [songs, folderName, metadataMap]);
   
   const handleSongClick = (song: string) => {
     if (onSelectSong) {
@@ -125,7 +122,6 @@ export const SongLister = ({
   
   const handleAddAlbumClick = () => {
     if (onAddAlbumToPlaylist && songs.length > 0) {
-      // Wenn gefiltert wird, werden nur die gefilterten Songs hinzugefügt, sonst alle
       const songsToAdd = searchTerm ? filteredSongs : songs;
       onAddAlbumToPlaylist(songsToAdd);
     }
@@ -138,7 +134,6 @@ export const SongLister = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
   
-  // Filterung basierend auf Dateiname, Titel oder Interpret
   const filteredSongs = songs.filter((song) => {
     const meta = metadataMap[song];
     const search = searchTerm.toLowerCase();
@@ -182,7 +177,6 @@ export const SongLister = ({
           )}
         </div>
         
-        {/* BUTTON: GANZES ALBUM / GEFILTERTE LISTE ZUR PLAYLIST HINZUFÜGEN */}
         {songs.length > 0 && onAddAlbumToPlaylist && (
           <button
             onClick={handleAddAlbumClick}
@@ -228,7 +222,6 @@ export const SongLister = ({
                         onClick={() => handleSongClick(song)}
                         className="snap-start text-theme-text text-xs hover:bg-theme-accent/20 border-b border-theme-border/40 p-2 cursor-pointer flex items-center justify-between gap-2 transition-colors"
                       >
-                        {/* TITLE / ARTIST ODER DATEINAME */}
                         <div className="flex flex-col truncate">
                           <span className="truncate font-medium">
                             {meta?.title ? meta.title : song.replace('.mp3', '')}
@@ -240,7 +233,6 @@ export const SongLister = ({
                           )}
                         </div>
                         
-                        {/* METADATEN (BITRATE & SPIELZEIT) */}
                         <div className="flex items-center gap-2 text-[10px] text-theme-muted shrink-0">
                           {meta?.bitrate && (
                             <span className="bg-theme-bg text-theme-border px-1 py-0.5 border border-theme-border/50 font-mono">

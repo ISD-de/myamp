@@ -1,9 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { getSubfolders } from '@/actions/getFolders';
-
-const CACHE_KEY = 'music_subfolders_cache';
 
 interface FolderListerProps {
   onSelectFolder?: (folderName: string) => void;
@@ -15,51 +12,35 @@ export const FolderLister = ({ onSelectFolder }: FolderListerProps) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   
-  useEffect(() => {
-    const loadFolders = async () => {
-      setLoading(true);
-      setError(null);
-      
-      const cachedData = localStorage.getItem(CACHE_KEY);
-      if (cachedData) {
-        try {
-          const parsed = JSON.parse(cachedData);
-          setFolders(parsed);
-          setLoading(false);
-          return;
-        } catch (e) {
-          localStorage.removeItem(CACHE_KEY);
-        }
-      }
-      
-      try {
-        const result = await getSubfolders();
-        setFolders(result);
-        localStorage.setItem(CACHE_KEY, JSON.stringify(result));
-      } catch (err: any) {
-        setError(err.message);
-        setFolders([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadFolders = async () => {
+    setLoading(true);
+    setError(null);
     
+    try {
+      const response = await fetch('/api/folders');
+      const data = await response.json();
+      
+      if (data.success && Array.isArray(data.folders)) {
+        setFolders(data.folders);
+      } else {
+        setError(data.error || 'Fehler beim Laden der Ordner');
+        setFolders([]);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Netzwerkfehler beim Laden der Ordner');
+      setFolders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  useEffect(() => {
     loadFolders();
   }, []);
   
   const handleRefresh = async () => {
-    localStorage.removeItem(CACHE_KEY);
     setSearchTerm('');
-    setLoading(true);
-    try {
-      const result = await getSubfolders();
-      setFolders(result);
-      localStorage.setItem(CACHE_KEY, JSON.stringify(result));
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    await loadFolders();
   };
   
   const handleFolderClick = (folder: string) => {
@@ -105,8 +86,14 @@ export const FolderLister = ({ onSelectFolder }: FolderListerProps) => {
         )}
         
         {error && (
-          <div className="text-xs bg-red-950/60 text-red-400 p-3 border-b border-theme-border">
-            ⚠️ {error}
+          <div className="text-xs bg-red-950/60 text-red-400 p-3 border-b border-theme-border flex flex-col gap-2">
+            <div>⚠️ {error}</div>
+            <button
+              onClick={handleRefresh}
+              className="self-start text-[10px] px-2 py-0.5 bg-red-900 text-white border border-red-700 cursor-pointer"
+            >
+              Erneut versuchen
+            </button>
           </div>
         )}
         
