@@ -1,13 +1,20 @@
 'use client';
 
-import React, {useEffect, useRef, useState} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import DirectoryScanner from '@/components/DirectoryScanner/DirectoryScanner';
 import SongLister from '@/components/SongLister/SongLister';
-import Visualizer, {VisualizerRef} from '@/components/Visualizer/Visualizer';
 import PresetSelector from '@/components/VisualizerPresetsList/VisualizerPresetsList';
 import AudioPlayer from '@/components/AudioPlayer/AudioPlayer';
-import Playlist, {PlaylistItem} from '@/components/Playlist/Playlist';
+import Playlist, { PlaylistItem } from '@/components/Playlist/Playlist';
 import ThemeSelector from '@/components/ThemeSelector/ThemeSelector';
+import type { VisualizerRef } from '@/components/Visualizer/Visualizer';
+
+// WICHTIG: Visualizer nur auf dem Client (ohne SSR) laden, wegen butterchurn & window-Objekt
+const Visualizer = dynamic(
+  () => import('@/components/Visualizer/Visualizer'),
+  { ssr: false }
+);
 
 const PLAYLIST_CACHE_KEY = 'music_player_saved_playlist';
 const CURRENT_INDEX_CACHE_KEY = 'music_player_current_index';
@@ -15,6 +22,18 @@ const SHUFFLE_MODE_CACHE_KEY = 'music_player_is_shuffle';
 const PLAYED_IDS_CACHE_KEY = 'music_player_played_ids';
 
 export default function Home(): React.JSX.Element {
+  
+  // Notfall-Fehleranzeige auf dem Handy
+  const [lastError, setLastError] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      setLastError(event.message);
+    };
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
+  
   const [currentFolder, setCurrentFolder] = useState<string | null>(null);
   const [isPlaylistOpen, setIsPlaylistOpen] = useState<boolean>(false);
   
@@ -124,21 +143,43 @@ export default function Home(): React.JSX.Element {
     }
   }, [playlist, currentIndex, isShuffle, playedIds, isLoaded]);
   
-  // 4. AUTOSTART TRIGGER
+  // 4. AUTOSTART TRIGGER (Sicherer Umgang mit Browser-Autoplay-Richtlinien)
   useEffect(() => {
-    if (shouldAutoPlay && audioElement && audioSrc) {
+    if (!shouldAutoPlay || !audioElement || !audioSrc) return;
+    
+    const handleFirstInteraction = () => {
       if (audioContext && audioContext.state === 'suspended') {
         audioContext.resume();
       }
       
       audioElement
         .play()
-        .then(() => setShouldAutoPlay(false))
-        .catch((err) => {
-          console.warn('Autoplay blockiert:', err);
+        .then(() => {
           setShouldAutoPlay(false);
+          window.removeEventListener('click', handleFirstInteraction);
+          window.removeEventListener('keydown', handleFirstInteraction);
+        })
+        .catch((err) => {
+          console.warn('Autoplay nach Interaktion fehlgeschlagen:', err);
         });
-    }
+    };
+    
+    // Direkt versuchen abzuspielen
+    audioElement
+      .play()
+      .then(() => {
+        setShouldAutoPlay(false);
+      })
+      .catch(() => {
+        // Falls der Browser es blockiert, auf den ersten Klick oder Tastendruck lauschen
+        window.addEventListener('click', handleFirstInteraction, { once: true });
+        window.addEventListener('keydown', handleFirstInteraction, { once: true });
+      });
+    
+    return () => {
+      window.removeEventListener('click', handleFirstInteraction);
+      window.removeEventListener('keydown', handleFirstInteraction);
+    };
   }, [shouldAutoPlay, audioElement, audioSrc, audioContext]);
   
   // 5. AUTO VISUALIZER PRESET BEI SONGWECHSEL
@@ -319,7 +360,7 @@ export default function Home(): React.JSX.Element {
   
   return (
     <main
-      className="relative min-h-screen w-full bg-theme-bg text-theme-text font-mono overflow-hidden transition-colors duration-300">
+      className="relative min-h-screen w-full bg-theme-bg text-theme-text font-mono overflow-hidden transition-colors duration-300 pointer-events-auto">
       {/* VISUALIZER BACKGROUND */}
       <div
         ref={visualizerContainerRef}
@@ -457,6 +498,20 @@ export default function Home(): React.JSX.Element {
               </div>
             </div>
           </div>
+        </div>
+      )}
+      
+      {/* Rotes Fehler-Overlay falls etwas abstürzt */}
+      {lastError && (
+        <div className="fixed inset-x-0 top-0 z-9999 bg-red-600 text-white p-4 text-xs font-mono shadow-2xl overflow-auto max-h-40">
+          <div className="font-bold">⚠️ CRASH ERKANNT:</div>
+          <div>{lastError}</div>
+          <button
+            onClick={() => setLastError(null)}
+            className="mt-2 bg-black text-white px-2 py-1 border border-white text-xs cursor-pointer"
+          >
+            Schließen
+          </button>
         </div>
       )}
     </main>
