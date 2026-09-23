@@ -1,19 +1,19 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import dynamic from 'next/dynamic';
 import SongLister from '@/components/SongLister/SongLister';
 import PresetSelector from '@/components/VisualizerPresetsList/VisualizerPresetsList';
 import AudioPlayer from '@/components/AudioPlayer/AudioPlayer';
-import Playlist, { PlaylistItem } from '@/components/Playlist/Playlist';
+import Playlist, {PlaylistItem} from '@/components/Playlist/Playlist';
 import ThemeSelector from '@/components/ThemeSelector/ThemeSelector';
-import type { VisualizerRef } from '@/components/Visualizer/Visualizer';
+import type {VisualizerRef} from '@/components/Visualizer/Visualizer';
 import FolderLister from '@/components/FolderLister/FolderLister';
 
 // WICHTIG: Visualizer nur auf dem Client (ohne SSR) laden, wegen butterchurn & window-Objekt
 const Visualizer = dynamic(
   () => import('@/components/Visualizer/Visualizer'),
-  { ssr: false }
+  {ssr: false}
 );
 
 export default function Home(): React.JSX.Element {
@@ -46,6 +46,9 @@ export default function Home(): React.JSX.Element {
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [sourceNode, setSourceNode] = useState<MediaElementAudioSourceNode | null>(null);
   const [showVisSettings, setShowVisSettings] = useState<boolean>(false);
+  
+  const [isInactive, setIsInactive] = useState<boolean>(false);
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   const visualizerRef = useRef<VisualizerRef | null>(null);
   const visualizerContainerRef = useRef<HTMLDivElement | null>(null);
@@ -95,8 +98,8 @@ export default function Home(): React.JSX.Element {
     
     fetch('/api/playlist', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedData),
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(updatedData)
     }).catch((err) => {
       console.warn('Fehler beim Speichern auf dem Server:', err);
     });
@@ -111,7 +114,7 @@ export default function Home(): React.JSX.Element {
     setPlayedIds((prev) => {
       if (!prev.includes(uniqueId)) {
         const updated = [...prev, uniqueId];
-        saveToServer({ playedIds: updated });
+        saveToServer({playedIds: updated});
         return updated;
       }
       return prev;
@@ -121,7 +124,7 @@ export default function Home(): React.JSX.Element {
   // 3. SERVER-PERSISTENZ BEI ÄNDERUNGEN
   useEffect(() => {
     if (!isLoaded) return;
-    saveToServer({ playlist, currentIndex, isShuffle, playedIds });
+    saveToServer({playlist, currentIndex, isShuffle, playedIds});
   }, [playlist, currentIndex, isShuffle, playedIds, isLoaded]);
   
   // 4. AUTO VISUALIZER PRESET BEI SONGWECHSEL
@@ -130,6 +133,44 @@ export default function Home(): React.JSX.Element {
       visualizerRef.current.loadRandomPreset(2.0);
     }
   }, [currentSong, autoPresetEnabled]);
+  
+  // Inaktivitäts-Timer Logik (10 Sekunden Inaktivität -> 50% Opacity)
+  useEffect(() => {
+    // Wenn die Playlist offen ist, soll der Player nicht ausblenden
+    if (isPlaylistOpen) {
+      setIsInactive(false);
+      return;
+    }
+    
+    const resetInactivityTimer = () => {
+      setIsInactive(false);
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+      inactivityTimerRef.current = setTimeout(() => {
+        setIsInactive(true);
+      }, 5000); // 5 Sekunden
+    };
+    
+    // Events für Interaktion registrieren
+    window.addEventListener('mousemove', resetInactivityTimer);
+    window.addEventListener('keydown', resetInactivityTimer);
+    window.addEventListener('click', resetInactivityTimer);
+    window.addEventListener('touchstart', resetInactivityTimer);
+    
+    // Initialen Timer starten
+    resetInactivityTimer();
+    
+    return () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+      window.removeEventListener('mousemove', resetInactivityTimer);
+      window.removeEventListener('keydown', resetInactivityTimer);
+      window.removeEventListener('click', resetInactivityTimer);
+      window.removeEventListener('touchstart', resetInactivityTimer);
+    };
+  }, [isPlaylistOpen]);
   
   const onSelectFolder = (folder: string) => {
     setCurrentFolder(folder);
@@ -188,7 +229,7 @@ export default function Home(): React.JSX.Element {
     
     setPlayedIds((prev) => {
       const updated = prev.filter((playedId) => playedId !== id);
-      saveToServer({ playedIds: updated });
+      saveToServer({playedIds: updated});
       return updated;
     });
   };
@@ -197,7 +238,7 @@ export default function Home(): React.JSX.Element {
     setPlaylist([]);
     setCurrentIndex(-1);
     setPlayedIds([]);
-    saveToServer({ playlist: [], currentIndex: -1, isShuffle: false, playedIds: [] });
+    saveToServer({playlist: [], currentIndex: -1, isShuffle: false, playedIds: []});
   };
   
   const handleToggleShuffle = () => {
@@ -211,7 +252,7 @@ export default function Home(): React.JSX.Element {
         setPlayedIds([]);
         newPlayed = [];
       }
-      saveToServer({ isShuffle: nextShuffle, playedIds: newPlayed });
+      saveToServer({isShuffle: nextShuffle, playedIds: newPlayed});
       return nextShuffle;
     });
   };
@@ -242,7 +283,7 @@ export default function Home(): React.JSX.Element {
         
         const resetIds = currentUniqueId ? [currentUniqueId] : [];
         setPlayedIds(resetIds);
-        saveToServer({ playedIds: resetIds });
+        saveToServer({playedIds: resetIds});
       }
       
       const randomItem =
@@ -317,41 +358,46 @@ export default function Home(): React.JSX.Element {
       </div>
       
       {/* FLOATING PLAYER & CONTROL PANELS */}
-      <div className="relative z-10 p-2 flex flex-col gap-2 pointer-events-auto">
-        <div className="w-full md:w-125 flex flex-col gap-1.5">
-          {/* MAIN PLAYER CONTAINER */}
-          <div
-            className="bg-theme-panel/90 backdrop-blur-md border-2 border-theme-border shadow-2xl transition-colors duration-300">
-            <AudioPlayer
-              audioSrc={audioSrc}
-              currentSong={currentSong}
-              onNextSong={playlist.length > 0 ? handleNextSong : undefined}
-              onPrevSong={playlist.length > 0 ? handlePrevSong : undefined}
-              onOpenPlaylist={() => setIsPlaylistOpen(true)}
-              isShuffle={isShuffle}
-              onToggleShuffle={handleToggleShuffle}
-              showVisualizerSettings={showVisSettings}
-              onToggleVisualizerSettings={() => setShowVisSettings(!showVisSettings)}
-              onAudioElementReady={(node, ctx, source) => {
-                if (node && ctx && source) {
-                  try {
-                    source.connect(ctx.destination);
-                  } catch (e) {
-                    // Ignorieren falls bereits verbunden
+      <div
+        className={`relative z-10 p-2 flex flex-col gap-2 pointer-events-auto transition-opacity duration-1000 ease-in-out ${
+          isInactive ? 'opacity-0' : 'opacity-100'
+        }`}
+      >
+        <div className="relative z-10 p-2 flex flex-col gap-2 pointer-events-auto">
+          <div className="w-full md:w-125 flex flex-col gap-1.5">
+            {/* MAIN PLAYER CONTAINER */}
+            <div
+              className="bg-theme-panel/90 backdrop-blur-md border-2 border-theme-border shadow-2xl transition-colors duration-300">
+              <AudioPlayer
+                audioSrc={audioSrc}
+                currentSong={currentSong}
+                onNextSong={playlist.length > 0 ? handleNextSong : undefined}
+                onPrevSong={playlist.length > 0 ? handlePrevSong : undefined}
+                onOpenPlaylist={() => setIsPlaylistOpen(true)}
+                isShuffle={isShuffle}
+                onToggleShuffle={handleToggleShuffle}
+                showVisualizerSettings={showVisSettings}
+                onToggleVisualizerSettings={() => setShowVisSettings(!showVisSettings)}
+                onAudioElementReady={(node, ctx, source) => {
+                  if (node && ctx && source) {
+                    try {
+                      source.connect(ctx.destination);
+                    } catch (e) {
+                      // Ignorieren falls bereits verbunden
+                    }
+                    
+                    if (ctx.state === 'suspended') {
+                      ctx.resume();
+                    }
+                    
+                    setAudioElement(node);
+                    setAudioContext(ctx);
+                    setSourceNode(source);
                   }
-                  
-                  if (ctx.state === 'suspended') {
-                    ctx.resume();
-                  }
-                  
-                  setAudioElement(node);
-                  setAudioContext(ctx);
-                  setSourceNode(source);
-                }
-              }}
-            />
+                }}
+              />
+            </div>
           </div>
-          
           {showVisSettings && (
             <div className="flex flex-col">
               {/* THEME SELECTOR BAR */}
@@ -443,7 +489,8 @@ export default function Home(): React.JSX.Element {
       
       {/* Rotes Fehler-Overlay falls etwas abstürzt */}
       {lastError && (
-        <div className="fixed inset-x-0 top-0 z-[9999] bg-red-600 text-white p-4 text-xs font-mono shadow-2xl overflow-auto max-h-40">
+        <div
+          className="fixed inset-x-0 top-0 z-[9999] bg-red-600 text-white p-4 text-xs font-mono shadow-2xl overflow-auto max-h-40">
           <div className="font-bold">⚠️ CRASH ERKANNT:</div>
           <div>{lastError}</div>
           <button
