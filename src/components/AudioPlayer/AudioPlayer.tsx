@@ -2,10 +2,12 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Equalizer from '@/components/AudioPlayer/Equalizer';
+import MarqueeDisplay, {Marquee} from '@/components/Marquee/Marquee';
+import Marquee2D from '@/components/Marquee/Marquee2D';
 
 interface AudioPlayerProps {
   audioSrc: string | null;
-  currentSong: string | null;
+  currentSong?: string | null;
   onNextSong?: () => void;
   onPrevSong?: () => void;
   onOpenPlaylist?: () => void;
@@ -46,6 +48,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   // NEU: States für dynamisch ermittelte Audio-Werte bei Songwechsel
   const [bitrate, setBitrate] = useState<string | null>(null);
   const [sampleRate, setSampleRate] = useState<string | null>(null);
+  const [extractedTitle, setExtractedTitle] = useState<string>('Kein Song ausgewählt');
   
   const onNextSongRef = useRef(onNextSong);
   useEffect(() => {
@@ -117,6 +120,38 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
       isCancelled = true;
     };
   }, [audioSrc, duration]);
+  
+  // Dieser Effect lauscht auf jede Änderung von audioSrc oder currentSong
+  useEffect(() => {
+    let title = 'Kein Song ausgewählt';
+    
+    if (audioSrc) {
+      try {
+        // Falls audioSrc ein relativer Pfad ist
+        const url = new URL(audioSrc, window.location.origin);
+        const folderParam = url.searchParams.get('folder');
+        const songParam = url.searchParams.get('song');
+        
+        const extractedFolder = folderParam ? decodeURIComponent(folderParam) : '';
+        const extractedSong = songParam ? decodeURIComponent(songParam).replace(/^\d+\s*[-–—]\s*/, '').replace(/\.[^/.]+$/, '') : '';
+        
+        if (extractedFolder && extractedSong) {
+          title = `${extractedFolder} - ${extractedSong}`;
+        } else if (extractedSong) {
+          title = extractedSong;
+        }
+      } catch (e) {
+        console.warn('Fehler beim Parsen der audioSrc URL:', e);
+      }
+    }
+    
+    // Fallback falls über audioSrc nichts gefunden wurde, aber currentSong da ist
+    if ((!audioSrc || title === 'Kein Song ausgewählt') && currentSong) {
+      title = currentSong.replace(/^\d+\s*[-–—]\s*/, '').replace(/\.[^/.]+$/, '');
+    }
+    
+    setExtractedTitle(title);
+  }, [audioSrc, currentSong]);
   
   useEffect(() => {
     if (!audioSrc || !audioRef.current) return;
@@ -233,9 +268,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
               {isPlaying ? '▶ PLAYING' : '❚❚ PAUSED'}
             </span>
           </div>
-          <div className="text-xs font-bold truncate text-theme-text">
-            {currentSong ? currentSong.replace('.mp3', '') : 'Kein Song ausgewählt'}
-          </div>
+          <Marquee2D text={extractedTitle} speed={50}/>
         </div>
         
         <div className="flex flex-col gap-1 mb-3">
