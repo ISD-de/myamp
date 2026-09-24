@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import Equalizer from '@/components/AudioPlayer/Equalizer';
-import MarqueeDisplay, {Marquee} from '@/components/Marquee/Marquee';
 import Marquee2D from '@/components/Marquee/Marquee2D';
+import Equalizer from '@/components/Equalizer/Equalizer';
 
 interface AudioPlayerProps {
   audioSrc: string | null;
