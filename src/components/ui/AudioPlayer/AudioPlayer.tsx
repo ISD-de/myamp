@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import Marquee2D from '@/components/atoms/Marquee/Marquee2D';
 import Equalizer from '@/components/Equalizer/Equalizer';
+import { useAudioPlayer } from '@/hooks/AudioPlayer/useAudioPlayer';
 
 interface AudioPlayerProps {
   audioSrc: string | null;
@@ -33,196 +34,34 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                                                           onToggleVisualizerSettings,
                                                           onAudioElementReady,
                                                         }) => {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
-  
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [duration, setDuration] = useState<number>(0);
-  const [currentTime, setCurrentTime] = useState<number>(0);
-  const [volume, setVolume] = useState<number>(1);
-  const [isMuted, setIsMuted] = useState<boolean>(false);
-  const [showEq, setShowEq] = useState<boolean>(false);
-  
-  // NEU: States für dynamisch ermittelte Audio-Werte bei Songwechsel
-  const [bitrate, setBitrate] = useState<string | null>(null);
-  const [sampleRate, setSampleRate] = useState<string | null>(null);
-  const [extractedTitle, setExtractedTitle] = useState<string>('Kein Song ausgewählt');
-  
-  const onNextSongRef = useRef(onNextSong);
-  useEffect(() => {
-    onNextSongRef.current = onNextSong;
-  }, [onNextSong]);
-  
-  const initAudioNodes = () => {
-    if (!audioRef.current) return;
-    
-    if (!audioContextRef.current) {
-      const AudioCtx =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      audioContextRef.current = new AudioCtx();
-    }
-    
-    if (audioContextRef.current.state === 'suspended') {
-      audioContextRef.current.resume();
-    }
-    
-    if (!sourceNodeRef.current && audioContextRef.current) {
-      try {
-        sourceNodeRef.current = audioContextRef.current.createMediaElementSource(audioRef.current);
-        sourceNodeRef.current.connect(audioContextRef.current.destination);
-      } catch (err) {
-        console.warn('SourceNode existiert bereits:', err);
-      }
-    }
-    
-    if (onAudioElementReady && audioRef.current && audioContextRef.current && sourceNodeRef.current) {
-      onAudioElementReady(audioRef.current, audioContextRef.current, sourceNodeRef.current);
-    }
-  };
-  
-  // METADATEN / BITRATE BEI SONGWECHSEL BERECHNEN
-  useEffect(() => {
-    if (!audioSrc) {
-      setBitrate(null);
-      setSampleRate(null);
-      return;
-    }
-    
-    // Abtastrate aus dem aktiven AudioContext auslesen (oder Standard 44.1/48 kHz)
-    if (audioContextRef.current) {
-      const sr = (audioContextRef.current.sampleRate / 1000).toFixed(1);
-      setSampleRate(sr);
-    }
-    
-    // Optional: Bitrate über Dateigröße / Headerauswertung schätzen oder via fetch ermitteln
-    let isCancelled = false;
-    fetch(audioSrc, { method: 'HEAD' })
-      .then((res) => {
-        const contentLength = res.headers.get('content-length');
-        // Wenn die Dateigröße und Dauer bekannt sind, lässt sich die Bitrate grob errechnen
-        // Alternativ kannst du hier feste Standardwerte annehmen oder die Server-Response nutzen
-        if (contentLength && duration > 0 && !isCancelled) {
-          const bytes = parseInt(contentLength, 10);
-          const calculatedBps = Math.round((bytes * 8) / duration / 1000);
-          setBitrate(calculatedBps > 0 ? calculatedBps.toString() : '320');
-        } else {
-          setBitrate('320'); // Fallback
-        }
-      })
-      .catch(() => {
-        if (!isCancelled) setBitrate('320');
-      });
-    
-    return () => {
-      isCancelled = true;
-    };
-  }, [audioSrc, duration]);
-  
-  // Dieser Effect lauscht auf jede Änderung von audioSrc oder currentSong
-  useEffect(() => {
-    let title = 'Kein Song ausgewählt';
-    
-    if (audioSrc) {
-      try {
-        // Falls audioSrc ein relativer Pfad ist
-        const url = new URL(audioSrc, window.location.origin);
-        const folderParam = url.searchParams.get('folder');
-        const songParam = url.searchParams.get('song');
-        
-        const extractedFolder = folderParam ? decodeURIComponent(folderParam) : '';
-        const extractedSong = songParam ? decodeURIComponent(songParam).replace(/^\d+\s*[-–—]\s*/, '').replace(/\.[^/.]+$/, '') : '';
-        
-        if (extractedFolder && extractedSong) {
-          title = `${extractedFolder} - ${extractedSong}`;
-        } else if (extractedSong) {
-          title = extractedSong;
-        }
-      } catch (e) {
-        console.warn('Fehler beim Parsen der audioSrc URL:', e);
-      }
-    }
-    
-    // Fallback falls über audioSrc nichts gefunden wurde, aber currentSong da ist
-    if ((!audioSrc || title === 'Kein Song ausgewählt') && currentSong) {
-      title = currentSong.replace(/^\d+\s*[-–—]\s*/, '').replace(/\.[^/.]+$/, '');
-    }
-    
-    setExtractedTitle(title);
-  }, [audioSrc, currentSong]);
-  
-  useEffect(() => {
-    if (!audioSrc || !audioRef.current) return;
-    
-    initAudioNodes();
-    
-    audioRef.current.src = audioSrc;
-    audioRef.current.load();
-    
-    const playPromise = audioRef.current.play();
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => setIsPlaying(true))
-        .catch((error) => {
-          console.warn('Autoplay unterbunden:', error);
-          setIsPlaying(false);
-        });
-    }
-  }, [audioSrc]);
-  
-  const togglePlay = () => {
-    if (!audioRef.current || !audioSrc) return;
-    initAudioNodes();
-    if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
-      audioContextRef.current.resume();
-    }
-    
-    if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      audioRef.current.play().then(() => setIsPlaying(true)).catch(console.error);
-    }
-  };
-  
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseFloat(e.target.value);
-    setVolume(val);
-    if (audioRef.current) {
-      audioRef.current.volume = val;
-      setIsMuted(val === 0);
-    }
-  };
-  
-  const toggleMute = () => {
-    if (!audioRef.current) return;
-    if (isMuted) {
-      audioRef.current.volume = volume || 0.5;
-      setIsMuted(false);
-    } else {
-      audioRef.current.volume = 0;
-      setIsMuted(true);
-    }
-  };
-  
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const time = parseFloat(e.target.value);
-    setCurrentTime(time);
-    if (audioRef.current) audioRef.current.currentTime = time;
-  };
-  
-  const handleEnded = () => {
-    setIsPlaying(false);
-    if (onNextSongRef.current) onNextSongRef.current();
-  };
-  
-  const formatTime = (time: number) => {
-    if (isNaN(time)) return '0:00';
-    const minutes = Math.floor(time / 60);
-    const seconds = Math.floor(time % 60);
-    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-  };
+  const {
+    audioRef,
+    audioContextRef,
+    sourceNodeRef,
+    isPlaying,
+    duration,
+    currentTime,
+    volume,
+    isMuted,
+    showEq,
+    setShowEq,
+    bitrate,
+    sampleRate,
+    extractedTitle,
+    togglePlay,
+    handleVolumeChange,
+    toggleMute,
+    handleSeek,
+    handleEnded,
+    formatTime,
+    setCurrentTime,
+    setDuration,
+  } = useAudioPlayer({
+    audioSrc,
+    currentSong,
+    onNextSong,
+    onAudioElementReady,
+  });
   
   return (
     <div className="flex flex-col w-full font-mono text-theme-text select-none">
@@ -245,7 +84,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             message: audioElement.error?.message,
           });
           
-          if (onNextSongRef.current) onNextSongRef.current();
+          if (onNextSong) onNextSong();
         }}
         onEnded={handleEnded}
         crossOrigin="anonymous"
