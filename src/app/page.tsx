@@ -4,7 +4,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import dynamic from 'next/dynamic';
 import SongLister from '@/components/SongLister/SongLister';
 import PresetSelector from '@/components/VisualizerPresetsList/VisualizerPresetsList';
-import AudioPlayer from '@/components/AudioPlayer/AudioPlayer';
+import AudioPlayer from '@/components/ui/AudioPlayer/AudioPlayer';
 import Playlist, {PlaylistItem} from '@/components/Playlist/Playlist';
 import ThemeSelector from '@/components/ThemeSelector/ThemeSelector';
 import type {VisualizerRef} from '@/components/ui/Visualizer/Visualizer';

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import Marquee2D from '@/components/Marquee/Marquee2D';
+import Marquee2D from '@/components/atoms/Marquee/Marquee2D';
 import Equalizer from '@/components/Equalizer/Equalizer';
 
 interface AudioPlayerProps {
