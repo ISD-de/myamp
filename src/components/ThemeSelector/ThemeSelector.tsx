@@ -4,10 +4,10 @@ import React from 'react';
 import { ThemeMode, useTheme } from '@/context/ThemeContext';
 
 const themes: { id: ThemeMode; label: string }[] = [
-  { id: 'cyberpunk', label: '💖 Cyber' },
-  { id: 'matrix', label: '🟢 Matrix' },
-  { id: 'synthwave', label: '🌆 Synth' },
-  { id: 'dark', label: '🌑 Dark' },
+  { id: 'orange', label: 'Orange' },
+  { id: 'green', label: 'Matrix' },
+  { id: 'light', label: 'Hell' },
+  { id: 'dark', label: 'Dunkel' },
 ];
 
 export const ThemeSelector: React.FC = () => {

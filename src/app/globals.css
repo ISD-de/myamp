@@ -2,19 +2,27 @@
 
 /* 1. Theme-Variablen & Farbschemata */
 @layer base {
-    /* Standard-Theme: Cyberpunk Neon / Winamp Classic */
-    :root, [data-theme="cyberpunk"] {
-        --theme-bg: #0d0f12;
-        --theme-panel: #161920;
-        --theme-border: #00ffcc;
-        --theme-text: #ffffff;
-        --theme-muted: #8a99ad;
-        --theme-accent: #ff007f;
-        --theme-glow: #00ffcc88;
+    :root, [data-theme="dark"] {
+        --theme-bg: #121212;
+        --theme-panel: #1e1e1e;
+        --theme-border: #333333;
+        --theme-text: #e0e0e0;
+        --theme-muted: #757575;
+        --theme-accent: #3b82f6;
+        --theme-glow: #3b82f6aa;
     }
 
-    /* Matrix / Terminal Theme */
-    [data-theme="matrix"] {
+    [data-theme="orange"] {
+        --theme-bg: #471d01;
+        --theme-panel: #301402;
+        --theme-border: #df7c2a;
+        --theme-text: #ffffff;
+        --theme-muted: #b8ada0;
+        --theme-accent: #eb6d14;
+        --theme-glow: rgb(246 239 232 / 0.53);
+    }
+
+    [data-theme="green"] {
         --theme-bg: #050b05;
         --theme-panel: #0d1a0d;
         --theme-border: #00ff41;
@@ -24,27 +32,16 @@
         --theme-glow: #00ff41aa;
     }
 
-    /* Synthwave / Vaporwave Theme */
-    [data-theme="synthwave"] {
-        --theme-bg: #1a0933;
-        --theme-panel: #2a114d;
-        --theme-border: #f72585;
-        --theme-text: #7209b7;
-        --theme-muted: #b5179e;
-        --theme-accent: #4cc9f0;
-        --theme-glow: #f72585aa;
+    [data-theme="light"] {
+        --theme-bg: #ffffff;
+        --theme-panel: #aaaaaa;
+        --theme-border: #222222;
+        --theme-text: #445566;
+        --theme-muted: #111111;
+        --theme-accent: #444444;
+        --theme-glow: #888888;
     }
 
-    /* Modern Dark Minimal Theme */
-    [data-theme="dark"] {
-        --theme-bg: #121212;
-        --theme-panel: #1e1e1e;
-        --theme-border: #333333;
-        --theme-text: #e0e0e0;
-        --theme-muted: #757575;
-        --theme-accent: #3b82f6;
-        --theme-glow: #3b82f6aa;
-    }
 }
 
 /* 2. Zuweisung an Tailwind v4 Utilities */

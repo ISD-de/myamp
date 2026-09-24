@@ -126,7 +126,7 @@ export function useHome() {
       }
       inactivityTimerRef.current = setTimeout(() => {
         setIsInactive(true);
-      }, 5000);
+      }, 500000);
     };
     
     window.addEventListener('mousemove', resetInactivityTimer);

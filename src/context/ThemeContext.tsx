@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-export type ThemeMode = 'cyberpunk' | 'matrix' | 'synthwave' | 'dark';
+export type ThemeMode = 'orange' | 'green' | 'light' | 'dark';
 
 interface ThemeContextType {
   theme: ThemeMode;
@@ -13,7 +13,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 const THEME_STORAGE_KEY = 'music_player_theme';
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<ThemeMode>('cyberpunk');
+  const [theme, setThemeState] = useState<ThemeMode>('dark');
   
   useEffect(() => {
     const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) as ThemeMode;
@@ -21,7 +21,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setThemeState(savedTheme);
       document.documentElement.setAttribute('data-theme', savedTheme);
     } else {
-      document.documentElement.setAttribute('data-theme', 'cyberpunk');
+      document.documentElement.setAttribute('data-theme', 'dark');
     }
   }, []);
   
