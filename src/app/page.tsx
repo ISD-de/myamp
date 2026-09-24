@@ -7,12 +7,12 @@ import PresetSelector from '@/components/VisualizerPresetsList/VisualizerPresets
 import AudioPlayer from '@/components/AudioPlayer/AudioPlayer';
 import Playlist, {PlaylistItem} from '@/components/Playlist/Playlist';
 import ThemeSelector from '@/components/ThemeSelector/ThemeSelector';
-import type {VisualizerRef} from '@/components/Visualizer/Visualizer';
+import type {VisualizerRef} from '@/components/ui/Visualizer/Visualizer';
 import FolderLister from '@/components/FolderLister/FolderLister';
 
 // WICHTIG: Visualizer nur auf dem Client (ohne SSR) laden, wegen butterchurn & window-Objekt
 const Visualizer = dynamic(
-  () => import('@/components/Visualizer/Visualizer'),
+  () => import('@/components/ui/Visualizer/Visualizer'),
   {ssr: false}
 );
 
@@ -244,7 +244,7 @@ export default function Home(): React.JSX.Element {
   const handleToggleShuffle = () => {
     setIsShuffle((prev) => {
       const nextShuffle = !prev;
-      let newPlayed = playedIds;
+      let newPlayed: string[];
       if (nextShuffle && currentItem) {
         newPlayed = [getSongUniqueId(currentItem)];
         setPlayedIds(newPlayed);
@@ -303,9 +303,9 @@ export default function Home(): React.JSX.Element {
     setCurrentIndex(index);
   };
   
-  const handlePresetChange = (presetData: any, presetName: string) => {
+  const handlePresetChange = (presetData: any) => {
     if (visualizerRef.current?.loadPreset) {
-      visualizerRef.current.loadPreset(presetData, 1.5);
+      visualizerRef.current.loadPreset(presetData, 0.5);
     }
   };
   
@@ -431,7 +431,7 @@ export default function Home(): React.JSX.Element {
                     <button
                       onClick={() => visualizerRef.current?.nextPreset()}
                       disabled={!currentSong}
-                      className="text-theme-text text-xs font-semibold px-2 py-1 bg-black/40 hover:bg-black/60 border border-theme-border transition active:scale-95 whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                      className="text-theme-text text-xs font-semibold px-2 py-1 bg-black/40 hover:bg-black/60 border border-theme-border transition active:scale-95 whitespace-nowrap disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
                     >
                       🔀 Nächstes
                     </button>
@@ -490,7 +490,7 @@ export default function Home(): React.JSX.Element {
       {/* Rotes Fehler-Overlay falls etwas abstürzt */}
       {lastError && (
         <div
-          className="fixed inset-x-0 top-0 z-[9999] bg-red-600 text-white p-4 text-xs font-mono shadow-2xl overflow-auto max-h-40">
+          className="fixed inset-x-0 top-0 z-9999 bg-red-600 text-white p-4 text-xs font-mono shadow-2xl overflow-auto max-h-40">
           <div className="font-bold">⚠️ CRASH ERKANNT:</div>
           <div>{lastError}</div>
           <button
