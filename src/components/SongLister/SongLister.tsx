@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import * as musicMetadata from 'music-metadata-browser';
-import { getSongs } from '@/actions/getSongs';
 
 interface SongListerProps {
   folderName: string | null;
@@ -29,12 +28,8 @@ export const SongLister = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Dynamischer Cache-Key pro Ordner
-  const cacheKey = folderName ? `music_songs_cache_${folderName}` : null;
-  const metaCacheKey = folderName ? `music_meta_cache_${folderName}` : null;
-  
   useEffect(() => {
-    if (!folderName || !cacheKey || !metaCacheKey) {
+    if (!folderName) {
       setSongs([]);
       setMetadataMap({});
       setSearchTerm('');
@@ -45,37 +40,21 @@ export const SongLister = ({
       setLoading(true);
       setError(null);
       
-      // Metadaten-Cache laden
-      const cachedMeta = localStorage.getItem(metaCacheKey);
-      if (cachedMeta) {
-        try {
-          setMetadataMap(JSON.parse(cachedMeta));
-        } catch (e) {
-          localStorage.removeItem(metaCacheKey);
-        }
-      }
-      
-      // Songs-Cache laden
-      const cachedData = localStorage.getItem(cacheKey);
-      if (cachedData) {
-        try {
-          const parsed = JSON.parse(cachedData);
-          setSongs(parsed);
-          setLoading(false);
-          console.log(`⚡ Songs für "${folderName}" aus localStorage geladen!`);
-          return;
-        } catch (e) {
-          localStorage.removeItem(cacheKey);
-        }
-      }
-      
-      console.log(`🎵 Lade Songs für "${folderName}" vom Server...`);
       try {
-        const result = await getSongs(folderName);
-        setSongs(result);
-        localStorage.setItem(cacheKey, JSON.stringify(result));
+        const response = await fetch(`/api/songs?folder=${encodeURIComponent(folderName)}`);
+        const data = await response.json();
+        
+        if (data.success && Array.isArray(data.songs)) {
+          setSongs(data.songs);
+          if (data.metadataMap) {
+            setMetadataMap(data.metadataMap);
+          }
+        } else {
+          setError(data.error || 'Fehler beim Laden der Songs');
+          setSongs([]);
+        }
       } catch (err: any) {
-        setError(err.message);
+        setError(err.message || 'Netzwerkfehler beim Laden der Songs');
         setSongs([]);
       } finally {
         setLoading(false);
@@ -83,14 +62,26 @@ export const SongLister = ({
     };
     
     loadSongs();
-  }, [folderName, cacheKey, metaCacheKey]);
+  }, [folderName]);
   
-  // Metadaten für gefundene Songs parsen
+  const saveMetadataToServer = async (song: string, meta: SongMetadata) => {
+    if (!folderName) return;
+    try {
+      await fetch('/api/songs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folder: folderName, song, metadata: meta }),
+      });
+    } catch (err) {
+      console.warn('Fehler beim Speichern der Metadaten auf dem Server:', err);
+    }
+  };
+  
   useEffect(() => {
-    if (!folderName || songs.length === 0 || !metaCacheKey) return;
+    if (!folderName || songs.length === 0) return;
     
     songs.forEach(async (song) => {
-      if (metadataMap[song]) return; // Bereits geparst
+      if (metadataMap[song]) return;
       
       const audioUrl = `/api/stream?folder=${encodeURIComponent(
         folderName
@@ -108,16 +99,13 @@ export const SongLister = ({
             : undefined,
         };
         
-        setMetadataMap((prev) => {
-          const updated = { ...prev, [song]: parsedMeta };
-          localStorage.setItem(metaCacheKey, JSON.stringify(updated));
-          return updated;
-        });
+        setMetadataMap((prev) => ({ ...prev, [song]: parsedMeta }));
+        saveMetadataToServer(song, parsedMeta);
       } catch (err) {
         console.warn(`Metadaten konnten für ${song} nicht geladen werden:`, err);
       }
     });
-  }, [songs, folderName, metaCacheKey]);
+  }, [songs, folderName, metadataMap]);
   
   const handleSongClick = (song: string) => {
     if (onSelectSong) {
@@ -127,7 +115,6 @@ export const SongLister = ({
   
   const handleAddAlbumClick = () => {
     if (onAddAlbumToPlaylist && songs.length > 0) {
-      // Wenn gefiltert wird, werden nur die gefilterten Songs hinzugefügt, sonst alle
       const songsToAdd = searchTerm ? filteredSongs : songs;
       onAddAlbumToPlaylist(songsToAdd);
     }
@@ -140,7 +127,6 @@ export const SongLister = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
   
-  // Filterung basierend auf Dateiname, Titel oder Interpret
   const filteredSongs = songs.filter((song) => {
     const meta = metadataMap[song];
     const search = searchTerm.toLowerCase();
@@ -153,29 +139,29 @@ export const SongLister = ({
   
   if (!folderName) {
     return (
-      <div className="w-full h-fit p-3 text-xs text-text-light border border-player-border bg-player-bg font-mono">
-        Bitte wähle eine Album aus.
+      <div className="w-full h-fit p-3 text-xs text-theme-muted border-2 border-theme-border bg-theme-panel font-mono transition-colors duration-300">
+        Bitte wähle ein Album aus.
       </div>
     );
   }
   
   return (
-    <div className="border-player-border border-2 bg-player-bg flex flex-col gap-1 font-mono h-full">
-      {/* Such-Header mit Filterung & Album-Button */}
-      <div className="p-1.5 border-b border-player-border flex items-center gap-1.5 bg-background/50">
-        <div className="relative flex-1 flex items-center">
+    <div className="bg-theme-panel text-theme-text flex flex-col font-mono h-full min-h-0 transition-colors duration-300">
+      {/* SUCH-HEADER & ALBUM-BUTTON */}
+      <div className="p-1.5 border-b border-theme-border flex items-center gap-1.5 bg-theme-bg/60 shrink-0">
+        <div className="flex-1 flex items-center">
           <input
             type="text"
             placeholder="Songs, Titel oder Interpret suchen..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             disabled={loading || !!error}
-            className="w-full bg-player-bg text-text-light text-xs px-2 py-1 pr-6 border border-player-border rounded focus:outline-none focus:border-purple-500 placeholder:text-gray-500 disabled:opacity-50"
+            className="w-full bg-theme-bg text-theme-text text-xs px-2 py-1 pr-6 border border-theme-border/60 focus:outline-none focus:border-theme-border placeholder:text-theme-muted/50 disabled:opacity-50"
           />
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
-              className="absolute right-1 text-xs text-gray-400 hover:text-white px-1"
+              className="absolute right-1 text-xs text-theme-muted hover:text-theme-text px-1 cursor-pointer"
               title="Suche zurücksetzen"
             >
               ✕
@@ -183,11 +169,10 @@ export const SongLister = ({
           )}
         </div>
         
-        {/* Button: Ganzes Album / gefilterte Liste zur Playlist hinzufügen */}
         {songs.length > 0 && onAddAlbumToPlaylist && (
           <button
             onClick={handleAddAlbumClick}
-            className="text-[10px] bg-purple-900/40 hover:bg-purple-800/60 text-purple-200 border border-purple-700/50 px-2 py-1 rounded whitespace-nowrap active:scale-95 transition-all shrink-0"
+            className="text-[10px] bg-theme-accent/20 hover:bg-theme-accent/40 text-theme-text border border-theme-border/70 px-2 py-1 whitespace-nowrap active:scale-95 transition-all shrink-0 cursor-pointer font-bold"
             title="Ganze Liste zur Playlist hinzufügen"
           >
             + Album ({filteredSongs.length})
@@ -195,15 +180,22 @@ export const SongLister = ({
         )}
       </div>
       
-      {/* Songliste */}
-      <div className="w-full flex-1 min-h-0 overflow-y-auto snap-y snap-mandatory flex flex-col">
-        {loading && <div className="p-3 text-xs text-main border border-border">Lade MP3s...</div>}
+      {/* SONGLISTE MIT SAUBEREM SCROLLCONTAINER */}
+      <div className="w-full flex-1 min-h-0 overflow-auto flex flex-col">
+        {loading && (
+          <div className="p-3 text-xs text-theme-muted animate-pulse">
+            ⏳ Lade MP3s...
+          </div>
+        )}
+        
         {error && (
-          <div className="text-main text-sm bg-red-950/50 p-3 border border-border">{error}</div>
+          <div className="text-xs bg-red-950/60 text-red-400 p-3 border-b border-theme-border">
+            ⚠️ {error}
+          </div>
         )}
         
         {!loading && !error && songs.length === 0 && (
-          <div className="p-3 text-xs text-main border border-border">
+          <div className="p-3 text-xs text-theme-muted text-center italic">
             Keine MP3-Dateien in diesem Ordner gefunden.
           </div>
         )}
@@ -211,45 +203,45 @@ export const SongLister = ({
         {!loading && !error && songs.length > 0 && (
           <>
             {filteredSongs.length > 0 ? (
-              <div className="border border-player-border">
-                <ul className="flex flex-col">
-                  {filteredSongs.map((song, index) => {
-                    const meta = metadataMap[song];
-                    
-                    return (
-                      <li
-                        key={index}
-                        onClick={() => handleSongClick(song)}
-                        className="snap-start text-text-light text-xs hover:bg-background-hover border-b border-player-border p-1.5 cursor-pointer flex items-center justify-between gap-2 transition-colors"
-                      >
-                        {/* Title / Artist oder Dateiname */}
-                        <div className="flex flex-col truncate">
-                          <span className="truncate font-medium">
+              <ul className="flex flex-col">
+                {filteredSongs.map((song, index) => {
+                  const meta = metadataMap[song];
+                  
+                  return (
+                    <li
+                      key={index}
+                      onClick={() => handleSongClick(song)}
+                      className="text-theme-text hover:bg-theme-accent/20 border-b border-theme-border/40 cursor-pointer flex transition-colors"
+                    >
+                      <div className="flex items-center gap-1.5 w-full min-w-0">
+                        {/* Exakt deine ursprüngliche Anordnung in einer Zeile (flex-row) */}
+                        <div className="flex flex-row items-center min-w-0 gap-2 p-0.5 flex-1">
+                          <div className="truncate font-medium text-[10px]">
                             {meta?.title ? meta.title : song.replace('.mp3', '')}
-                          </span>
+                          </div>
                           {meta?.artist && (
-                            <span className="text-[10px] text-gray-400 truncate">
+                            <div className="text-[9px] text-theme-muted truncate">
                               {meta.artist} {meta.album ? `• ${meta.album}` : ''}
-                            </span>
+                            </div>
                           )}
                         </div>
-                        
-                        {/* Metadaten (Bitrate & Spielzeit) */}
-                        <div className="flex items-center gap-2 text-[10px] text-gray-400 shrink-0">
-                          {meta?.bitrate && (
-                            <span className="bg-black/50 text-[#00ffcc] px-1 py-0.5 rounded border border-gray-800">
-                              {meta.bitrate} kbps
-                            </span>
-                          )}
-                          <span>{formatDuration(meta?.duration)}</span>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-theme-muted shrink-0">
+                        {meta?.bitrate && (
+                          <span className="bg-theme-bg text-theme-border px-1 py-0.5 border border-theme-border/50 font-mono">
+                            {meta.bitrate} kbps
+                          </span>
+                        )}
+                        <span className="font-mono">{formatDuration(meta?.duration)}</span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             ) : (
-              <div className="p-3 text-xs text-gray-400 text-center">Keine Songs gefunden</div>
+              <div className="p-4 text-xs text-theme-muted text-center italic">
+                Keine Songs gefunden
+              </div>
             )}
           </>
         )}
