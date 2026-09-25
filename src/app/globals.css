@@ -61,3 +61,28 @@ body {
     color: var(--theme-text);
     font-family: monospace;
 }
+
+/* Custom Retro Scrollbar für die gesamte App */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--theme-border) var(--theme-bg);
+}
+
+*::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+    background: var(--theme-bg);
+    border-left: 1px solid var(--theme-border);
+}
+
+*::-webkit-scrollbar-thumb {
+    background: var(--theme-border);
+    border-radius: 0;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--theme-accent);
+}

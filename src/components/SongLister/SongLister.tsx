@@ -64,7 +64,6 @@ export const SongLister = ({
     loadSongs();
   }, [folderName]);
   
-  // Funktion zum Speichern einzelner Metadaten auf dem Server
   const saveMetadataToServer = async (song: string, meta: SongMetadata) => {
     if (!folderName) return;
     try {
@@ -78,12 +77,11 @@ export const SongLister = ({
     }
   };
   
-  // Metadaten für Songs parsen, die noch nicht im Server-Cache waren
   useEffect(() => {
     if (!folderName || songs.length === 0) return;
     
     songs.forEach(async (song) => {
-      if (metadataMap[song]) return; // Bereits im Cache vorhanden
+      if (metadataMap[song]) return;
       
       const audioUrl = `/api/stream?folder=${encodeURIComponent(
         folderName
@@ -101,12 +99,7 @@ export const SongLister = ({
             : undefined,
         };
         
-        setMetadataMap((prev) => {
-          const updated = { ...prev, [song]: parsedMeta };
-          return updated;
-        });
-        
-        // Direkt persistent auf dem Server abspeichern
+        setMetadataMap((prev) => ({ ...prev, [song]: parsedMeta }));
         saveMetadataToServer(song, parsedMeta);
       } catch (err) {
         console.warn(`Metadaten konnten für ${song} nicht geladen werden:`, err);
@@ -153,11 +146,10 @@ export const SongLister = ({
   }
   
   return (
-    <div className="border-2 border-theme-border bg-theme-panel text-theme-text flex flex-col font-mono h-full overflow-hidden transition-colors duration-300">
-      
+    <div className="bg-theme-panel text-theme-text flex flex-col font-mono h-full min-h-0 transition-colors duration-300">
       {/* SUCH-HEADER & ALBUM-BUTTON */}
       <div className="p-1.5 border-b border-theme-border flex items-center gap-1.5 bg-theme-bg/60 shrink-0">
-        <div className="relative flex-1 flex items-center">
+        <div className="flex-1 flex items-center">
           <input
             type="text"
             placeholder="Songs, Titel oder Interpret suchen..."
@@ -188,8 +180,8 @@ export const SongLister = ({
         )}
       </div>
       
-      {/* SONGLISTE */}
-      <div className="w-full flex-1 min-h-0 overflow-y-auto snap-y snap-mandatory flex flex-col">
+      {/* SONGLISTE MIT SAUBEREM SCROLLCONTAINER */}
+      <div className="w-full flex-1 min-h-0 overflow-auto flex flex-col">
         {loading && (
           <div className="p-3 text-xs text-theme-muted animate-pulse">
             ⏳ Lade MP3s...
@@ -211,41 +203,41 @@ export const SongLister = ({
         {!loading && !error && songs.length > 0 && (
           <>
             {filteredSongs.length > 0 ? (
-              <div className="border-b border-theme-border/40">
-                <ul className="flex flex-col">
-                  {filteredSongs.map((song, index) => {
-                    const meta = metadataMap[song];
-                    
-                    return (
-                      <li
-                        key={index}
-                        onClick={() => handleSongClick(song)}
-                        className="snap-start text-theme-text text-xs hover:bg-theme-accent/20 border-b border-theme-border/40 p-2 cursor-pointer flex items-center justify-between gap-2 transition-colors"
-                      >
-                        <div className="flex flex-col truncate">
-                          <span className="truncate font-medium">
+              <ul className="flex flex-col">
+                {filteredSongs.map((song, index) => {
+                  const meta = metadataMap[song];
+                  
+                  return (
+                    <li
+                      key={index}
+                      onClick={() => handleSongClick(song)}
+                      className="text-theme-text hover:bg-theme-accent/20 border-b border-theme-border/40 cursor-pointer flex transition-colors"
+                    >
+                      <div className="flex items-center gap-1.5 w-full min-w-0">
+                        {/* Exakt deine ursprüngliche Anordnung in einer Zeile (flex-row) */}
+                        <div className="flex flex-row items-center min-w-0 gap-2 p-0.5 flex-1">
+                          <div className="truncate font-medium text-[10px]">
                             {meta?.title ? meta.title : song.replace('.mp3', '')}
-                          </span>
+                          </div>
                           {meta?.artist && (
-                            <span className="text-[10px] text-theme-muted truncate">
+                            <div className="text-[9px] text-theme-muted truncate">
                               {meta.artist} {meta.album ? `• ${meta.album}` : ''}
-                            </span>
+                            </div>
                           )}
                         </div>
-                        
-                        <div className="flex items-center gap-2 text-[10px] text-theme-muted shrink-0">
-                          {meta?.bitrate && (
-                            <span className="bg-theme-bg text-theme-border px-1 py-0.5 border border-theme-border/50 font-mono">
-                              {meta.bitrate} kbps
-                            </span>
-                          )}
-                          <span className="font-mono">{formatDuration(meta?.duration)}</span>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-theme-muted shrink-0">
+                        {meta?.bitrate && (
+                          <span className="bg-theme-bg text-theme-border px-1 py-0.5 border border-theme-border/50 font-mono">
+                            {meta.bitrate} kbps
+                          </span>
+                        )}
+                        <span className="font-mono">{formatDuration(meta?.duration)}</span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             ) : (
               <div className="p-4 text-xs text-theme-muted text-center italic">
                 Keine Songs gefunden

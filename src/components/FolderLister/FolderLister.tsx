@@ -54,7 +54,7 @@ export const FolderLister = ({ onSelectFolder }: FolderListerProps) => {
   );
   
   return (
-    <div className="border-2 border-theme-border bg-theme-panel text-theme-text flex flex-col h-full font-mono overflow-hidden transition-colors duration-300">
+    <div className="border border-theme-border text-theme-text flex flex-col h-full w-full font-mono transition-colors duration-300">
       
       {/* SUCH-HEADER */}
       <div className="p-1.5 border-b border-theme-border flex items-center gap-2 bg-theme-bg/60 shrink-0">
@@ -106,10 +106,9 @@ export const FolderLister = ({ onSelectFolder }: FolderListerProps) => {
                     <li
                       key={index}
                       onClick={() => handleFolderClick(folder)}
-                      className="snap-start text-theme-text hover:bg-theme-accent/20 hover:text-white text-xs break-all border-b border-theme-border/40 p-2 cursor-pointer transition-colors"
+                      className="snap-start text-theme-text font-mono hover:bg-theme-accent/20 hover:text-white text-[11px] break-all border-b border-theme-border/40 p-1.5 cursor-pointer transition-colors w-full truncate"
                     >
                       <span className="flex items-center gap-1.5">
-                        <span className="text-theme-muted text-[10px]">📁</span>
                         {folder}
                       </span>
                     </li>

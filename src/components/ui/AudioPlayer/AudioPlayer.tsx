@@ -3,7 +3,9 @@
 import React from 'react';
 import Marquee2D from '@/components/atoms/Marquee/Marquee2D';
 import Equalizer from '@/components/Equalizer/Equalizer';
-import { useAudioPlayer } from '@/hooks/AudioPlayer/useAudioPlayer';
+import {useAudioPlayer} from '@/hooks/AudioPlayer/useAudioPlayer';
+import PlayerButton from '@/components/ui/PlayerButton/PlayerButton';
+import MarqueeBottom from '@/components/atoms/Marquee/MarquueBottom';
 
 interface AudioPlayerProps {
   audioSrc: string | null;
@@ -32,7 +34,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                                                           onToggleShuffle,
                                                           showVisualizerSettings = false,
                                                           onToggleVisualizerSettings,
-                                                          onAudioElementReady,
+                                                          onAudioElementReady
                                                         }) => {
   const {
     audioRef,
@@ -55,172 +57,122 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     handleEnded,
     formatTime,
     setCurrentTime,
-    setDuration,
+    setDuration
   } = useAudioPlayer({
     audioSrc,
     currentSong,
     onNextSong,
-    onAudioElementReady,
+    onAudioElementReady
   });
   
   return (
-    <div className="flex flex-col w-full font-mono text-theme-text select-none">
-      <audio
-        ref={audioRef}
-        onTimeUpdate={() => {
-          if (audioRef.current) setCurrentTime(audioRef.current.currentTime);
-        }}
-        onLoadedMetadata={() => {
-          if (audioRef.current) setDuration(audioRef.current.duration);
-        }}
-        onError={(e) => {
-          const audioElement = e.currentTarget;
-          const errorCode = audioElement.error?.code;
-          
-          if (errorCode === 1) return;
-          
-          console.warn("Fehler beim Laden des Tracks:", {
-            code: errorCode,
-            message: audioElement.error?.message,
-          });
-          
-          if (onNextSong) onNextSong();
-        }}
-        onEnded={handleEnded}
-        crossOrigin="anonymous"
-      />
-      
-      <div className="p-3 w-full transition-colors duration-300">
-        {/* HEADER MIT DYNAMISCH BERECHNETER BITRATE & SAMPLERATE */}
-        <div className="bg-theme-bg/80 border border-theme-border/60 p-2 mb-3 flex flex-col gap-1">
-          <div className="flex justify-between items-center text-[10px] text-theme-muted">
-            <div className="flex items-center gap-2">
-              <span>CURRENT TRACK</span>
-              {(bitrate || sampleRate) && (
-                <span className="text-theme-accent font-bold tracking-tight">
+    <>
+      <div className="flex flex-col w-full font-mono text-theme-text select-none">
+        <audio
+          ref={audioRef}
+          onTimeUpdate={() => {
+            if (audioRef.current) setCurrentTime(audioRef.current.currentTime);
+          }}
+          onLoadedMetadata={() => {
+            if (audioRef.current) setDuration(audioRef.current.duration);
+          }}
+          onError={(e) => {
+            const audioElement = e.currentTarget;
+            const errorCode = audioElement.error?.code;
+            
+            if (errorCode === 1) return;
+            
+            console.warn("Fehler beim Laden des Tracks:", {
+              code: errorCode,
+              message: audioElement.error?.message
+            });
+            
+            if (onNextSong) onNextSong();
+          }}
+          onEnded={handleEnded}
+          crossOrigin="anonymous"
+        />
+        
+        <div className="p-3 w-full transition-colors duration-300">
+          {/* HEADER MIT DYNAMISCH BERECHNETER BITRATE & SAMPLERATE */}
+          <div className="bg-theme-bg/80 border border-theme-border/60 p-2 mb-3 flex flex-col gap-1">
+            <div className="flex justify-between items-center text-[10px] text-theme-muted">
+              <div className="flex items-center gap-2">
+                <span>CURRENT TRACK</span>
+                {(bitrate || sampleRate) && (
+                  <span className="text-theme-accent font-bold tracking-tight">
                   {bitrate ? `${bitrate}kbps` : ''} {sampleRate ? `/ ${sampleRate}kHz` : ''}
                 </span>
-              )}
-            </div>
-            <span className="font-bold text-theme-border">
+                )}
+              </div>
+              <span className="font-bold text-theme-border">
               {isPlaying ? '▶ PLAYING' : '❚❚ PAUSED'}
             </span>
-          </div>
-          <Marquee2D text={extractedTitle} speed={50}/>
-        </div>
-        
-        <div className="flex flex-col gap-1 mb-3">
-          <input
-            type="range"
-            min="0"
-            max={duration || 0}
-            value={currentTime}
-            onChange={handleSeek}
-            disabled={!audioSrc}
-            className="w-full h-2 bg-theme-bg appearance-none cursor-pointer accent-theme-accent disabled:opacity-30"
-          />
-          <div className="flex justify-between text-[10px] text-theme-muted font-bold">
-            <span>{formatTime(currentTime)}</span>
-            <span>{formatTime(duration)}</span>
-          </div>
-        </div>
-        
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-1">
-            <button
-              onClick={onPrevSong}
-              disabled={!onPrevSong}
-              className="px-2 py-1 bg-theme-bg border border-theme-border/70 hover:bg-theme-accent/20 text-xs font-bold transition active:scale-95 disabled:opacity-40 cursor-pointer"
-            >
-              ⏮
-            </button>
-            <button
-              onClick={togglePlay}
-              disabled={!audioSrc}
-              className="px-3 py-1 bg-theme-accent text-white border border-theme-border font-bold text-xs transition active:scale-95 disabled:opacity-40 cursor-pointer"
-            >
-              {isPlaying ? '▶' : '❚❚'}
-            </button>
-            <button
-              onClick={onNextSong}
-              disabled={!onNextSong}
-              className="px-2 py-1 bg-theme-bg border border-theme-border/70 hover:bg-theme-accent/20 text-xs font-bold transition active:scale-95 disabled:opacity-40 cursor-pointer"
-            >
-              ⏭
-            </button>
-            
-            {onToggleShuffle && (
-              <button
-                onClick={onToggleShuffle}
-                className={`ml-1 px-2 py-1 text-[10px] font-bold border transition cursor-pointer active:scale-95 ${
-                  isShuffle
-                    ? 'bg-theme-accent text-white border-theme-border'
-                    : 'bg-theme-bg text-theme-muted border-theme-border/50'
-                }`}
-              >
-                {isShuffle ? '312' : '123'}
-              </button>
-            )}
-            
-            {onOpenPlaylist && (
-              <button
-                onClick={onOpenPlaylist}
-                className="ml-1 px-2 py-1 bg-theme-bg text-theme-text border border-theme-border/70 hover:bg-theme-accent/20 text-[10px] font-bold transition active:scale-95 cursor-pointer"
-              >
-                ≡♪
-              </button>
-            )}
-            
-            {onToggleVisualizerSettings && (
-              <button
-                onClick={onToggleVisualizerSettings}
-                className={`ml-1 px-2 py-1 text-[10px] font-bold border transition cursor-pointer active:scale-95 ${
-                  showVisualizerSettings
-                    ? 'bg-theme-accent text-white border-theme-border'
-                    : 'bg-theme-bg text-theme-text border-theme-border/70 hover:bg-theme-accent/20'
-                }`}
-              >
-                📊
-              </button>
-            )}
+            </div>
+            <Marquee2D text={extractedTitle} speed={50}/>
           </div>
           
-          <div className="flex items-center gap-1.5">
-            <div className="flex items-center gap-1 bg-theme-bg border border-theme-border/50 px-1.5 py-0.5">
-              <button onClick={toggleMute} className="text-[10px] text-theme-muted hover:text-theme-text cursor-pointer">
-                {isMuted ? '🔇' : '🔊'}
-              </button>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={isMuted ? 0 : volume}
-                onChange={handleVolumeChange}
-                className="w-12 h-1.5 bg-theme-panel appearance-none cursor-pointer accent-theme-accent"
-              />
+          <div className="flex flex-col gap-1 mb-3">
+            <input
+              type="range"
+              min="0"
+              max={duration || 0}
+              value={currentTime}
+              onChange={handleSeek}
+              disabled={!audioSrc}
+              className="w-full h-2 bg-theme-bg appearance-none cursor-pointer accent-theme-accent disabled:opacity-30"
+            />
+            <div className="flex justify-between text-[10px] text-theme-muted font-bold">
+              <span>{formatTime(currentTime)}</span>
+              <span>{formatTime(duration)}</span>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center flex-wrap justify-between gap-1.5">
+                <PlayerButton onClick={onPrevSong} disabled={!onPrevSong}>⏮</PlayerButton>
+                <PlayerButton onClick={togglePlay} isActive={isPlaying} disabled={!audioSrc}>{isPlaying
+                  ? '▶'
+                  : '❚❚'}</PlayerButton>
+                <PlayerButton onClick={onNextSong} disabled={!onNextSong}>⏭</PlayerButton>
+                {onToggleShuffle &&
+                  <PlayerButton onClick={onToggleShuffle} isActive={isShuffle}>{isShuffle
+                    ? '312'
+                    : '123'}</PlayerButton>}
+                {onOpenPlaylist && <PlayerButton onClick={onOpenPlaylist}>≡♪</PlayerButton>}
             </div>
             
-            <button
-              onClick={() => setShowEq(!showEq)}
-              className={`px-1.5 py-0.5 text-[10px] font-bold border transition cursor-pointer active:scale-95 ${
-                showEq
-                  ? 'bg-theme-accent text-white border-theme-border'
-                  : 'bg-theme-bg text-theme-muted border-theme-border/50'
-              }`}
-            >
-              EQ
-            </button>
+            <div>
+              <PlayerButton onClick={() => setShowEq(!showEq)} isActive={showEq}>EQ</PlayerButton>
+              {onToggleVisualizerSettings &&
+                <PlayerButton onClick={onToggleVisualizerSettings}
+                              isActive={showVisualizerSettings}>⚙️</PlayerButton>}
+            </div>
+            
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
+                <PlayerButton onClick={toggleMute}>{isMuted ? '🔇' : '🔊'}</PlayerButton>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={isMuted ? 0 : volume}
+                  onChange={handleVolumeChange}
+                  className="flex-1 h-1 bg-theme-bg appearance-none cursor-pointer accent-theme-accent border-0"
+                />
+              </div>
+            </div>
           </div>
         </div>
+        {showEq && (
+          <div className="border-t border-theme-border/80">
+            <Equalizer audioContext={audioContextRef.current} sourceNode={sourceNodeRef.current}/>
+          </div>
+        )}
+        <MarqueeBottom extractedTitle={extractedTitle}/>
       </div>
-      
-      {showEq && (
-        <div className="border-t bg-theme-bg/50">
-          <Equalizer audioContext={audioContextRef.current} sourceNode={sourceNodeRef.current} />
-        </div>
-      )}
-    </div>
+    </>
   );
 };
 

@@ -2,13 +2,13 @@ import React, { useEffect, useRef } from 'react';
 
 interface MarqueeCanvasProps {
   text: string;
-  speed?: number; // Pixel pro Sekunde (z. B. 40 bis 80)
+  speed?: number; // Pixel pro Sekunde
 }
 
 export const Marquee2D: React.FC<MarqueeCanvasProps> = ({
-                                                        text,
-                                                        speed = 50, // Standard-Geschwindigkeit in Pixeln pro Sekunde
-                                                      }) => {
+                                                          text,
+                                                          speed = 50,
+                                                        }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   
   useEffect(() => {
@@ -17,10 +17,9 @@ export const Marquee2D: React.FC<MarqueeCanvasProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
-    // High-DPI (Retina) Displays scharf stellen
     const dpr = window.devicePixelRatio || 1;
     const width = canvas.parentElement?.clientWidth || 300;
-    const height = 24; // Feste Höhe des Laufband-Bereichs
+    const height = 24;
     
     canvas.width = width * dpr;
     canvas.height = height * dpr;
@@ -29,49 +28,56 @@ export const Marquee2D: React.FC<MarqueeCanvasProps> = ({
     
     ctx.scale(dpr, dpr);
     
-    const fullText = text ? `   ${text}   ■` : '   KEIN SONG AUSGEWÄHLT   ■';
+    // Wir teilen den String auf in den Text und das rote Symbol am Ende
+    const rawTitle = text ? text : 'KEIN SONG AUSGEWÄHLT';
+    const mainPart = `   ${rawTitle}   `;
+    const dotPart = '■';
     
-    // Font-Eigenschaften exakt wie im Theme definieren
     const font = 'bold 12px monospace';
     ctx.font = font;
     
-    // Textbreite messen
-    const textWidth = ctx.measureText(fullText).width;
-    let xPos = width; // Startet rechts außerhalb des Sichtfelds
+    const mainWidth = ctx.measureText(mainPart).width;
+    const dotWidth = ctx.measureText(dotPart).width;
+    const totalWidth = mainWidth + dotWidth;
+    
+    let xPos = width;
     let animationFrameId: number;
     let lastTime = performance.now();
     
     const render = (currentTime: number) => {
-      const deltaTime = (currentTime - lastTime) / 1000; // Zeitdifferenz in Sekunden
+      const deltaTime = (currentTime - lastTime) / 1000;
       lastTime = currentTime;
       
-      // Position nach Geschwindigkeit verschieben (Pixel pro Sekunde * vergangene Zeit)
       xPos -= speed * deltaTime;
       
-      // Wenn der erste Text komplett durchgelaufen ist, nahtlos zurücksetzen
-      if (xPos <= -textWidth) {
-        xPos += textWidth;
+      if (xPos <= -totalWidth) {
+        xPos += totalWidth;
       }
       
-      // Canvas leeren
       ctx.clearRect(0, 0, width, height);
-      
-      // Text zeichnen (Farbe holen wir uns idealerweise direkt aus den CSS-Variablen oder fix)
       ctx.font = font;
-      // Hier nutzen wir einen neutralen Textfarb-Ton (passend zu deinem Theme)
-      ctx.fillStyle = getComputedStyle(canvas).getPropertyValue('--theme-text') || '#e2e8f0';
       ctx.textBaseline = 'middle';
       
-      // Den Text zweimal zeichnen für den endlosen Schleifen-Effekt
-      ctx.fillText(fullText, xPos, height / 2);
-      ctx.fillText(fullText, xPos + textWidth, height / 2);
+      const textColor = getComputedStyle(canvas).getPropertyValue('--theme-text') || '#e2e8f0';
+      
+      let currentX = xPos;
+      while (currentX < width) {
+        // 1. Haupttext zeichnen
+        ctx.fillStyle = textColor;
+        ctx.fillText(mainPart, currentX, height / 2);
+        
+        // 2. Roten Dot direkt dahinter zeichnen
+        ctx.fillStyle = '#500e0e';
+        ctx.fillText(dotPart, currentX + mainWidth, height / 2);
+        
+        currentX += totalWidth;
+      }
       
       animationFrameId = requestAnimationFrame(render);
     };
     
     animationFrameId = requestAnimationFrame(render);
     
-    // Aufräumen beim Unmounten oder Textwechsel
     return () => {
       cancelAnimationFrame(animationFrameId);
     };

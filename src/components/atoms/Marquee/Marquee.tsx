@@ -7,7 +7,7 @@ interface MarqueeProps {
   speed?: number; // Millisekunden pro Schritt (kleiner = schneller)
 }
 
-export const Marquee: React.FC<MarqueeProps> = ({ text, speed = 120 }) => {
+export const Marquee: React.FC<MarqueeProps> = ({ text, speed = 220 }) => {
   const [displayText, setDisplayText] = useState('');
   
   useEffect(() => {
@@ -17,7 +17,7 @@ export const Marquee: React.FC<MarqueeProps> = ({ text, speed = 120 }) => {
     
     // Feste Anzahl von Zeichen, die im Anzeigefenster sichtbar sein sollen
     // (Passt perfekt in die typische Winamp-Header-Breite bei Monospace)
-    const windowSize = 20;
+    const windowSize = 40;
     let currentIndex = 0;
     
     const interval = setInterval(() => {
@@ -35,7 +35,7 @@ export const Marquee: React.FC<MarqueeProps> = ({ text, speed = 120 }) => {
   
   return (
     <div className="w-full flex justify-center overflow-hidden select-none bg-transparent">
-      <div className="text-xs font-mono font-bold tracking-widest text-theme-text whitespace-pre">
+      <div className="text-3xl text-[#ffffffa0] whitespace-pre">
         {displayText}
       </div>
     </div>
