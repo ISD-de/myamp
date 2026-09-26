@@ -26,7 +26,7 @@ export const Equalizer: React.FC<EqualizerProps> = ({
   } = useEqualizer({ audioContext, sourceNode, destinationNode });
   
   return (
-    <div className="bg-theme-pannel/80 border-theme-border/40 p-3 w-full font-mono text-xs select-none transition-colors duration-300">
+    <div className="bg-theme-pannel/80 border-theme-border/40 p-3 w-full font-mono text-xs select-none">
       {/* HEADER CONTROLS */}
       <div className="flex items-center justify-between pb-3 mb-2 border-b border-theme-border/60">
         <div className="flex items-center gap-2">

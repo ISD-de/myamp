@@ -26,10 +26,10 @@ export default function Playlist({
                                    onClearPlaylist,
                                  }: PlaylistProps) {
   return (
-    <div className="flex flex-col h-full bg-theme-panel border-2 border-theme-border p-2 font-mono text-xs text-theme-text transition-colors duration-300 overflow-hidden">
+    <div className="flex flex-col h-full bg-theme-panel border border-theme-border p-1 font-mono text-xs text-theme-text overflow-hidden">
       
       {/* HEADER */}
-      <div className="flex items-center justify-between border-b border-theme-border/50 pb-2 mb-2 shrink-0">
+      <div className="flex items-center justify-between border-b border-theme-border/50 pb-1 shrink-0">
         <span className="font-bold text-theme-text flex items-center">
           PLAYLIST ({items.length})
           {playedIds.length > 0 && (
@@ -49,7 +49,7 @@ export default function Playlist({
       </div>
       
       {/* TRACK LIST */}
-      <div className="flex-1 min-h-0 overflow-y-auto space-y-1 pr-1">
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-1">
         {items.length === 0 ? (
           <div className="text-theme-muted/50 italic text-center py-4">
             Playlist ist leer
@@ -62,7 +62,7 @@ export default function Playlist({
             // Ermittlung des passenden Symbols
             let statusIcon: React.ReactNode = index + 1;
             if (isActive && isPlayed) {
-              statusIcon = <span className="text-theme-border font-bold">▶✓</span>;
+              statusIcon = <span className="text-theme-text font-bold">▶ ✓</span>;
             } else if (isActive) {
               statusIcon = <span className="text-theme-border font-bold">▶</span>;
             } else if (isPlayed) {
@@ -73,16 +73,16 @@ export default function Playlist({
               <div
                 key={item.id}
                 onClick={() => onSelectTrack(index)}
-                className={`flex items-center justify-between p-1.5 cursor-pointer transition border ${
+                className={`flex items-center justify-between p-0.5 cursor-pointer border ${
                   isActive
-                    ? 'bg-theme-accent/30 border-theme-border text-white font-bold'
+                    ? 'bg-theme-accent/30 border-theme-border text-theme-text font-bold'
                     : isPlayed
                       ? 'bg-theme-bg/30 border-transparent text-theme-muted/60 opacity-70 hover:opacity-100'
                       : 'bg-theme-bg/60 border-theme-border/30 text-theme-text hover:bg-theme-accent/10'
                 }`}
               >
-                <div className="flex items-center gap-2 overflow-hidden mr-2">
-                  <span className="text-[10px] w-6 flex justify-center text-theme-muted shrink-0 font-mono">
+                <div className="flex items-center gap-2 overflow-hidden">
+                  <span className="text-[10px] w-6 text-theme-text flex justify-center shrink-0 font-mono">
                     {statusIcon}
                   </span>
                   <span className="truncate" title={item.songName}>

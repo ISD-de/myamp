@@ -139,29 +139,29 @@ export const SongLister = ({
   
   if (!folderName) {
     return (
-      <div className="w-full h-fit p-3 text-xs text-theme-muted border-2 border-theme-border bg-theme-panel font-mono transition-colors duration-300">
+      <div className="w-full h-fit p-3 text-xs text-theme-muted border-2 border-theme-border bg-theme-panel font-mono">
         Bitte wähle ein Album aus.
       </div>
     );
   }
   
   return (
-    <div className="bg-theme-panel text-theme-text flex flex-col font-mono h-full min-h-0 transition-colors duration-300">
+    <div className="bg-theme-panel text-theme-text flex flex-col font-mono h-full min-h-0">
       {/* SUCH-HEADER & ALBUM-BUTTON */}
-      <div className="p-1.5 border-b border-theme-border flex items-center gap-1.5 bg-theme-bg/60 shrink-0">
-        <div className="flex-1 flex items-center">
+      <div className="p-1.5 border-b border-theme-border flex items-center gap-2 bg-theme-bg/60 shrink-0">
+        <div className="flex-1 flex items-center relative">
           <input
             type="text"
             placeholder="Songs, Titel oder Interpret suchen..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             disabled={loading || !!error}
-            className="w-full bg-theme-bg text-theme-text text-xs px-2 py-1 pr-6 border border-theme-border/60 focus:outline-none focus:border-theme-border placeholder:text-theme-muted/50 disabled:opacity-50"
+            className="w-full bg-theme-bg text-theme-text text-xs px-2 py-1 border border-theme-border/60 focus:border-theme-border focus:outline-none placeholder:text-theme-muted/50 disabled:opacity-50"
           />
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
-              className="absolute right-1 text-xs text-theme-muted hover:text-theme-text px-1 cursor-pointer"
+              className="text-xs text-theme-muted hover:text-theme-text mx-2 px-1.5 py-0.5 border border-theme-border bg-theme-bg transition active:scale-95 cursor-pointer"
               title="Suche zurücksetzen"
             >
               ✕
@@ -181,7 +181,7 @@ export const SongLister = ({
       </div>
       
       {/* SONGLISTE MIT SAUBEREM SCROLLCONTAINER */}
-      <div className="w-full flex-1 min-h-0 overflow-auto flex flex-col">
+      <div className="w-full flex-1 min-h-0 overflow-auto flex flex-col snap-y snap-mandatory">
         {loading && (
           <div className="p-3 text-xs text-theme-muted animate-pulse">
             ⏳ Lade MP3s...
@@ -211,7 +211,7 @@ export const SongLister = ({
                     <li
                       key={index}
                       onClick={() => handleSongClick(song)}
-                      className="text-theme-text hover:bg-theme-accent/20 border-b border-theme-border/40 cursor-pointer flex transition-colors"
+                      className="text-theme-text hover:bg-theme-accent/20 border-b border-theme-border/40 cursor-pointer px-1 py-0.5 flex snap-start"
                     >
                       <div className="flex items-center gap-1.5 w-full min-w-0">
                         {/* Exakt deine ursprüngliche Anordnung in einer Zeile (flex-row) */}
@@ -226,7 +226,7 @@ export const SongLister = ({
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] text-theme-muted shrink-0">
+                      <div className="flex items-center gap-2 text-[10px] p-0.5 text-theme-muted shrink-0">
                         {meta?.bitrate && (
                           <span className="bg-theme-bg text-theme-border px-1 py-0.5 border border-theme-border/50 font-mono">
                             {meta.bitrate} kbps

@@ -93,7 +93,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           crossOrigin="anonymous"
         />
         
-        <div className="p-3 w-full transition-colors duration-300">
+        <div className="p-3 w-full">
           {/* HEADER MIT DYNAMISCH BERECHNETER BITRATE & SAMPLERATE */}
           <div className="bg-theme-bg/80 border border-theme-border/60 p-2 mb-3 flex flex-col gap-1">
             <div className="flex justify-between items-center text-[10px] text-theme-muted">
