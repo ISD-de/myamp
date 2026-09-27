@@ -39,28 +39,6 @@ export default function SettingsModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
   
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isOpen) return;
-      
-      // Verhindern, dass Shortcuts ausgelöst werden, wenn man in einem Input/Textarea schreibt
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
-      
-      if (e.key === 'Escape') {
-        onClose();
-      } else if (e.key === 'ArrowRight') {
-        if (isSongActive) {
-          e.preventDefault();
-          onNextPreset();
-        }
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose, onNextPreset, isSongActive]);
-  
   if (!isOpen) return null;
   
   return (
