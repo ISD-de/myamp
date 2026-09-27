@@ -14,7 +14,7 @@ interface AudioPlayerProps {
   onPrevSong?: () => void;
   onOpenPlaylist?: () => void;
   isShuffle?: boolean;
-  isPlaylistOpen?:boolean;
+  isPlaylistOpen?: boolean;
   onToggleShuffle?: () => void;
   showVisualizerSettings?: boolean;
   onToggleVisualizerSettings?: () => void;
@@ -132,16 +132,16 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center flex-wrap justify-between gap-1.5">
-                <PlayerButton onClick={onPrevSong} disabled={!onPrevSong}>⏮</PlayerButton>
-                <PlayerButton onClick={togglePlay} isActive={true} disabled={!audioSrc}>{isPlaying
-                  ? '▶'
-                  : '❚❚'}</PlayerButton>
-                <PlayerButton onClick={onNextSong} disabled={!onNextSong}>⏭</PlayerButton>
-                {onToggleShuffle &&
-                  <PlayerButton onClick={onToggleShuffle} isActive={isShuffle}>{isShuffle
-                    ? '312'
-                    : '123'}</PlayerButton>}
-                {onOpenPlaylist && <PlayerButton onClick={onOpenPlaylist} isActive={isPlaylistOpen}>≡♪</PlayerButton>}
+              <PlayerButton onClick={onPrevSong} disabled={!onPrevSong}>⏮</PlayerButton>
+              <PlayerButton onClick={togglePlay} isActive={true} disabled={!audioSrc}>{isPlaying
+                ? '▶'
+                : '❚❚'}</PlayerButton>
+              <PlayerButton onClick={onNextSong} disabled={!onNextSong}>⏭</PlayerButton>
+              {onToggleShuffle &&
+                <PlayerButton onClick={onToggleShuffle} isActive={isShuffle}>{isShuffle
+                  ? '312'
+                  : '123'}</PlayerButton>}
+              {onOpenPlaylist && <PlayerButton onClick={onOpenPlaylist} isActive={isPlaylistOpen}>≡♪</PlayerButton>}
             </div>
             
             <div>
@@ -167,11 +167,9 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             </div>
           </div>
         </div>
-        {showEq && (
-          <div className="border-t border-theme-border/80">
-            <Equalizer audioContext={audioContextRef.current} sourceNode={sourceNodeRef.current}/>
-          </div>
-        )}
+        <div className="border-t border-theme-border/80">
+          <Equalizer audioContext={audioContextRef.current} sourceNode={sourceNodeRef.current} showUi={showEq}/>
+        </div>
         {!isPlaylistOpen && <MarqueeBottom extractedTitle={extractedTitle}/>}
       </div>
     </>

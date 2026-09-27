@@ -7,12 +7,14 @@ interface EqualizerProps {
   audioContext: AudioContext | null;
   sourceNode: MediaElementAudioSourceNode | null;
   destinationNode?: AudioNode;
+  showUi?:boolean;
 }
 
 export const Equalizer: React.FC<EqualizerProps> = ({
                                                       audioContext,
                                                       sourceNode,
                                                       destinationNode,
+                                                      showUi
                                                     }) => {
   const {
     isFlat,
@@ -24,6 +26,10 @@ export const Equalizer: React.FC<EqualizerProps> = ({
     handleBandChange,
     toggleFlatMode,
   } = useEqualizer({ audioContext, sourceNode, destinationNode });
+  
+  if (!showUi){
+    return null;
+  }
   
   return (
     <div className="bg-theme-pannel/80 border-theme-border/40 p-3 w-full font-mono text-xs select-none">
