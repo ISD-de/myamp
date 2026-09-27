@@ -172,7 +172,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
             <Equalizer audioContext={audioContextRef.current} sourceNode={sourceNodeRef.current}/>
           </div>
         )}
-        <MarqueeBottom extractedTitle={extractedTitle}/>
+        {!isPlaylistOpen && <MarqueeBottom extractedTitle={extractedTitle}/>}
       </div>
     </>
   );

@@ -80,6 +80,7 @@ export default function Home(): React.JSX.Element {
     handleAddAlbumToPlaylist,
     handleRemoveFromPlaylist,
     handleClearPlaylist,
+    handleResetPlayed,
     handleToggleShuffle,
     handleNextSong,
     handlePrevSong,
@@ -171,6 +172,7 @@ export default function Home(): React.JSX.Element {
                   onSelectTrack={handleSelectTrackFromPlaylist}
                   onRemoveTrack={handleRemoveFromPlaylist}
                   onClearPlaylist={handleClearPlaylist}
+                  onResetPlayed={handleResetPlayed}
                 />
               )}
               

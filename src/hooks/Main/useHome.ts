@@ -21,7 +21,6 @@ export function useHome() {
   const [playlist, setPlaylist] = useState<PlaylistItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(-1);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
-  
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const [sourceNode, setSourceNode] = useState<MediaElementAudioSourceNode | null>(null);
@@ -226,6 +225,10 @@ export function useHome() {
     saveToServer({playlist: [], currentIndex: -1, isShuffle: false, playedIds: []});
   };
   
+  const handleResetPlayed = () => {
+    setPlayedIds([]);
+  };
+  
   const handleToggleShuffle = () => {
     setIsShuffle((prev) => {
       const nextShuffle = !prev;
@@ -357,6 +360,7 @@ export function useHome() {
     handleAddAlbumToPlaylist,
     handleRemoveFromPlaylist,
     handleClearPlaylist,
+    handleResetPlayed,
     handleToggleShuffle,
     handleNextSong,
     handlePrevSong,

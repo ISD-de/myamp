@@ -18,6 +18,7 @@ interface CatalogProps {
   onSelectTrack: (index: number) => void;
   onRemoveTrack: (id: string) => void;
   onClearPlaylist: () => void;
+  onResetPlayed: () => void;
 }
 
 export const Catalog = ({
@@ -30,7 +31,8 @@ export const Catalog = ({
                           onClearPlaylist,
                           onRemoveTrack,
                           onSelectTrack,
-                          playedIds
+                          playedIds,
+                          onResetPlayed
                         }: CatalogProps) => {
   // States für die Breiten- und Höhen-Prozentanteile bzw. Pixel
   const [leftWidth, setLeftWidth] = useState<number>(250); // Startbreite für Folder in Pixeln
@@ -89,7 +91,7 @@ export const Catalog = ({
   return (
     <div
       ref={containerRef}
-      className="bg-theme-panel/90 backdrop-blur-md border border-theme-border -mt-0.5 w-full flex-1 flex flex-col min-h-0 select-none"
+      className="bg-theme-panel/90 border border-theme-border -mt-0.5 w-full flex-1 flex flex-col min-h-0 select-none"
     >
       <div className="w-full h-full flex justify-between gap-1 overflow-hidden">
         
@@ -123,13 +125,16 @@ export const Catalog = ({
             style={{height: `${topHeight}%`}}
           >
             <div className="border-b border-theme-border/50 bg-theme-panel overflow-auto">
-              <SongLister
-                folderName={folderName}
-                onSelectSong={onSelectSong}
-                onAddAlbumToPlaylist={onAddAlbumToPlaylist}
+              <Playlist
+                items={items}
+                currentIndex={currentIndex}
+                playedIds={playedIds}
+                onSelectTrack={onSelectTrack}
+                onRemoveTrack={onRemoveTrack}
+                onClearPlaylist={onClearPlaylist}
+                onResetPlayed={onResetPlayed}
               />
             </div>
-          
           </div>
           
           {/* DRAG HANDLE Y (Höhe verschieben) */}
@@ -146,13 +151,10 @@ export const Catalog = ({
             className="w-full border border-theme-border overflow-hidden flex flex-col bg-theme-bg/40 flex-1"
           >
             <div className="flex-1 overflow-y-auto">
-              <Playlist
-                items={items}
-                currentIndex={currentIndex}
-                playedIds={playedIds}
-                onSelectTrack={onSelectTrack}
-                onRemoveTrack={onRemoveTrack}
-                onClearPlaylist={onClearPlaylist}
+              <SongLister
+                folderName={folderName}
+                onSelectSong={onSelectSong}
+                onAddAlbumToPlaylist={onAddAlbumToPlaylist}
               />
             </div>
           </div>

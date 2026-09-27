@@ -16,6 +16,7 @@ interface PlaylistProps {
   onSelectTrack: (index: number) => void;
   onRemoveTrack: (id: string) => void;
   onClearPlaylist: () => void;
+  onResetPlayed?: () => void;
 }
 
 export default function Playlist({
@@ -24,7 +25,8 @@ export default function Playlist({
                                    playedIds = [],
                                    onSelectTrack,
                                    onRemoveTrack,
-                                   onClearPlaylist
+                                   onClearPlaylist,
+                                   onResetPlayed
                                  }: PlaylistProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -52,14 +54,28 @@ export default function Playlist({
             </div>
           )}
         </div>
-        {items.length > 0 && (
-          <button
-            onClick={onClearPlaylist}
-            className="text-red-400 hover:text-red-300 transition text-[10px] border border-red-900/60 bg-red-950/40 px-1.5 py-0.5 active:scale-95 cursor-pointer"
-          >
-            Leeren
-          </button>
-        )}
+        
+        {/* BUTTONS FÜR RESET UND LEEREN */}
+        <div className="flex items-center gap-5">
+          {playedIds.length > 0 && onResetPlayed && (
+            <button
+              onClick={onResetPlayed}
+              className="text-theme-text transition text-[10px] bg-theme-bg border border-theme-border/70 hover:bg-theme-accent/20 px-1.5 py-0.5 active:scale-95 cursor-pointer"
+              title="Alle als ungespielt markieren"
+            >
+              Reset
+            </button>
+          )}
+          {items.length > 0 && (
+            <button
+              onClick={onClearPlaylist}
+              className="text-red-400 hover:text-red-300 transition text-[10px] border border-red-900/60 bg-red-950/40 px-1.5 py-0.5 active:scale-95 cursor-pointer"
+              title="Playlist komplett leeren"
+            >
+              Leeren
+            </button>
+          )}
+        </div>
       </div>
       
       {/* TRACK LIST */}
@@ -72,7 +88,6 @@ export default function Playlist({
           items.map((item, index) => {
             const isActive = index === currentIndex;
             const isPlayed = playedIds.includes(item.id);
-            // Hier wird der String aufgetrennt!
             const parsed = parseSongString(item.id);
             
             let statusIcon: React.ReactNode = index + 1;
@@ -103,7 +118,6 @@ export default function Playlist({
                   <span className="text-[10px] w-6 text-theme-text flex justify-center shrink-0 font-mono">
                     {statusIcon}
                   </span>
-                  {/* Anzeige der aufbereiteten Metadaten */}
                   <div className="flex flex-col truncate" title={item.songName}>
                     <div className="truncate text-xs">
                       {parsed.title}

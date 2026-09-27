@@ -146,7 +146,7 @@ export const SongLister = ({
   }
   
   return (
-    <div className="bg-theme-panel text-theme-text flex flex-col font-mono h-full min-h-0">
+    <div className="bg-theme-panel/40 text-theme-text flex flex-col font-mono h-full min-h-0">
       {/* SUCH-HEADER & ALBUM-BUTTON */}
       <div className="p-1.5 border-b border-theme-border flex items-center gap-2 bg-theme-bg/60 shrink-0">
         <div className="flex-1 flex items-center relative">
