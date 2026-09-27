@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import butterchurn from 'butterchurn';
 import butterchurnPresets from 'butterchurn-presets';
+import { getPresets as getBaronPresets } from 'butterchurn-presets-baron';
 
 export interface UseVisualizerOptions {
   audioElement: HTMLAudioElement | null;
@@ -29,7 +30,10 @@ export function useVisualizer({
     }
     
     // Presets laden
-    const allPresets = butterchurnPresets.getPresets();
+    const allPresets = {
+      ...butterchurnPresets.getPresets(),
+      ...getBaronPresets({ random: true, count: 500 }) // Lädt z.B. 500 zusätzliche Presets
+    };
     presetsRef.current = allPresets;
     presetKeysRef.current = Object.keys(allPresets);
     
