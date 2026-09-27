@@ -26,18 +26,19 @@ export default function Playlist({
                                    onClearPlaylist,
                                  }: PlaylistProps) {
   return (
-    <div className="flex flex-col h-full bg-theme-panel border border-theme-border p-1 font-mono text-xs text-theme-text overflow-hidden">
+    <div className="flex flex-col h-full bg-theme-panel/40 border border-theme-border p-1 font-mono text-xs text-theme-text overflow-hidden">
       
       {/* HEADER */}
-      <div className="flex items-center justify-between border-b border-theme-border/50 pb-1 shrink-0">
-        <span className="font-bold text-theme-text flex items-center">
-          PLAYLIST ({items.length})
+      <div className="flex items-center justify-between border-b border-theme-border/50 pb-1">
+        {/* ÄNDERUNG HIER: items-baseline statt items-center sorgt dafür, dass die Schriften auf derselben Zeile sitzen */}
+        <div className="font-bold text-theme-text flex items-baseline gap-2">
+          <div>PLAYLIST ({items.length})</div>
           {playedIds.length > 0 && (
-            <span className="text-[10px] text-theme-muted font-normal ml-2">
+            <div className="text-[10px] text-theme-muted font-normal">
               ({playedIds.length}/{items.length} gespielt)
-            </span>
+            </div>
           )}
-        </span>
+        </div>
         {items.length > 0 && (
           <button
             onClick={onClearPlaylist}
@@ -49,7 +50,7 @@ export default function Playlist({
       </div>
       
       {/* TRACK LIST */}
-      <div className="flex-1 min-h-0 overflow-y-auto space-y-1">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         {items.length === 0 ? (
           <div className="text-theme-muted/50 italic text-center py-4">
             Playlist ist leer

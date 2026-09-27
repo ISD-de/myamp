@@ -1,9 +1,9 @@
 'use client';
 
 import React, {useCallback, useRef, useState} from 'react';
-import FolderLister from '@/components/FolderLister/FolderLister';
-import SongLister from '@/components/SongLister/SongLister';
-import Playlist, {PlaylistItem} from '@/components/Playlist/Playlist';
+import FolderLister from '@/components/Catalog/FolderLister/FolderLister';
+import SongLister from '@/components/Catalog/SongLister/SongLister';
+import Playlist, {PlaylistItem} from '@/components/Catalog/Playlist/Playlist';
 
 interface CatalogProps {
   onSelectFolder?: (folderName: string) => void;

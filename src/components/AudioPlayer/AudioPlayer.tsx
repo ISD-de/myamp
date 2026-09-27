@@ -4,7 +4,7 @@ import React from 'react';
 import Marquee2D from '@/components/atoms/Marquee/Marquee2D';
 import Equalizer from '@/components/Equalizer/Equalizer';
 import {useAudioPlayer} from '@/hooks/AudioPlayer/useAudioPlayer';
-import PlayerButton from '@/components/ui/PlayerButton/PlayerButton';
+import PlayerButton from '@/components/atoms/PlayerButton/PlayerButton';
 import MarqueeBottom from '@/components/atoms/Marquee/MarquueBottom';
 
 interface AudioPlayerProps {
@@ -14,6 +14,7 @@ interface AudioPlayerProps {
   onPrevSong?: () => void;
   onOpenPlaylist?: () => void;
   isShuffle?: boolean;
+  isPlaylistOpen?:boolean;
   onToggleShuffle?: () => void;
   showVisualizerSettings?: boolean;
   onToggleVisualizerSettings?: () => void;
@@ -31,6 +32,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                                                           onPrevSong,
                                                           onOpenPlaylist,
                                                           isShuffle = false,
+                                                          isPlaylistOpen = false,
                                                           onToggleShuffle,
                                                           showVisualizerSettings = false,
                                                           onToggleVisualizerSettings,
@@ -139,7 +141,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                   <PlayerButton onClick={onToggleShuffle} isActive={isShuffle}>{isShuffle
                     ? '312'
                     : '123'}</PlayerButton>}
-                {onOpenPlaylist && <PlayerButton onClick={onOpenPlaylist}>≡♪</PlayerButton>}
+                {onOpenPlaylist && <PlayerButton onClick={onOpenPlaylist} isActive={isPlaylistOpen}>≡♪</PlayerButton>}
             </div>
             
             <div>

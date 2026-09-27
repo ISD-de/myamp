@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { PlaylistItem } from '@/components/Playlist/Playlist';
 import type { VisualizerRef } from '@/components/ui/Visualizer/Visualizer';
+import {PlaylistItem} from '@/components/Catalog/Playlist/Playlist';
 
 export function useHome() {
   const [lastError, setLastError] = useState<string | null>(null);
@@ -112,7 +112,7 @@ export function useHome() {
     }
   }, [currentSong, autoPresetEnabled]);
   
-  // Inaktivitäts-Timer Logik
+  // Inaktivitäts-Timer Logik TODO: configurable Tie and inactive at isPlaylistOpen
   useEffect(() => {
     if (isPlaylistOpen) {
       setIsInactive(false);
@@ -126,7 +126,7 @@ export function useHome() {
       }
       inactivityTimerRef.current = setTimeout(() => {
         setIsInactive(true);
-      }, 500000);
+      }, 5000);
     };
     
     window.addEventListener('mousemove', resetInactivityTimer);

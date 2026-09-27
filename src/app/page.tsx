@@ -2,16 +2,16 @@
 
 import React from 'react';
 import dynamic from 'next/dynamic';
-import PresetSelector from '@/components/VisualizerPresetsList/VisualizerPresetsList';
-import AudioPlayer from '@/components/ui/AudioPlayer/AudioPlayer';
+import PresetSelector from '@/components/Visualizer/VisualizerPresetsList/VisualizerPresetsList';
+import AudioPlayer from '@/components/AudioPlayer/AudioPlayer';
 import ThemeSelector from '@/components/ThemeSelector/ThemeSelector';
 import {useHome} from '@/hooks/Main/useHome';
 import Catalog from '@/components/Catalog/Catalog';
-import PlayerButton from '@/components/ui/PlayerButton/PlayerButton';
+import PlayerButton from '@/components/atoms/PlayerButton/PlayerButton';
 
 // WICHTIG: Visualizer nur auf dem Client (ohne SSR) laden, wegen butterchurn & window-Objekt
 const Visualizer = dynamic(
-  () => import('@/components/ui/Visualizer/Visualizer'),
+  () => import('@/components/Visualizer/Visualizer'),
   {ssr: false}
 );
 
@@ -90,6 +90,7 @@ export default function Home(): React.JSX.Element {
                 onPrevSong={playlist.length > 0 ? handlePrevSong : undefined}
                 onOpenPlaylist={() => setIsPlaylistOpen(!isPlaylistOpen)}
                 isShuffle={isShuffle}
+                isPlaylistOpen={isPlaylistOpen}
                 onToggleShuffle={handleToggleShuffle}
                 showVisualizerSettings={showVisSettings}
                 onToggleVisualizerSettings={() => setShowVisSettings(!showVisSettings)}
