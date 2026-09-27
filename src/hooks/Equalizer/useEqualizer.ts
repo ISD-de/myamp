@@ -7,16 +7,16 @@ export interface BandSetting {
 }
 
 const ITUNES_BANDS: BandSetting[] = [
-  { label: '70', frequency: 70, gain: 3 },
-  { label: '180', frequency: 180, gain: -4 },
-  { label: '320', frequency: 320, gain: -6 },
-  { label: '600', frequency: 600, gain: -9 },
-  { label: '1K', frequency: 1000, gain: -9 },
-  { label: '3K', frequency: 3000, gain: -8 },
-  { label: '6K', frequency: 6000, gain: -5 },
-  { label: '12K', frequency: 12000, gain: -3 },
-  { label: '14K', frequency: 14000, gain: 2 },
-  { label: '16K', frequency: 16000, gain: 7 }
+  { label: '70', frequency: 70, gain: 2 },
+  { label: '180', frequency: 180, gain: -3 },
+  { label: '320', frequency: 320, gain: -5 },
+  { label: '600', frequency: 600, gain: -8 },
+  { label: '1K', frequency: 1000, gain: -8 },
+  { label: '3K', frequency: 3000, gain: -7 },
+  { label: '6K', frequency: 6000, gain: -4 },
+  { label: '12K', frequency: 12000, gain: -2 },
+  { label: '14K', frequency: 14000, gain: 1 },
+  { label: '16K', frequency: 16000, gain: 5 }
 ];
 
 export interface UseEqualizerOptions {
@@ -31,7 +31,7 @@ export function useEqualizer({
                                destinationNode,
                              }: UseEqualizerOptions) {
   const [isFlat, setIsFlat] = useState<boolean>(false);
-  const [preampGain, setPreampGain] = useState<number>(0);
+  const [preampGain, setPreampGain] = useState<number>(5);
   const [pan, setPan] = useState<number>(0);
   const [bands, setBands] = useState<BandSetting[]>(ITUNES_BANDS);
   
