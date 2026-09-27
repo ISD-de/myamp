@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, {useEffect, useRef} from 'react';
+import {parseSongString} from '@/lib/ParsedSong';
 
 export interface PlaylistItem {
   id: string;
@@ -23,7 +24,7 @@ export default function Playlist({
                                    playedIds = [],
                                    onSelectTrack,
                                    onRemoveTrack,
-                                   onClearPlaylist,
+                                   onClearPlaylist
                                  }: PlaylistProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -32,13 +33,14 @@ export default function Playlist({
     if (currentIndex >= 0 && itemRefs.current[currentIndex]) {
       itemRefs.current[currentIndex]?.scrollIntoView({
         behavior: 'smooth',
-        block: 'start',
+        block: 'start'
       });
     }
   }, [currentIndex]);
   
   return (
-    <div className="flex flex-col h-full bg-theme-panel/40 border border-theme-border p-1 font-mono text-xs text-theme-text overflow-hidden">
+    <div
+      className="flex flex-col h-full bg-theme-panel/40 border border-theme-border p-1 font-mono text-xs text-theme-text overflow-hidden">
       
       {/* HEADER */}
       <div className="flex items-center justify-between border-b border-theme-border/50 pb-1">
@@ -70,6 +72,8 @@ export default function Playlist({
           items.map((item, index) => {
             const isActive = index === currentIndex;
             const isPlayed = playedIds.includes(item.id);
+            // Hier wird der String aufgetrennt!
+            const parsed = parseSongString(item.id);
             
             let statusIcon: React.ReactNode = index + 1;
             if (isActive && isPlayed) {
@@ -80,11 +84,6 @@ export default function Playlist({
               statusIcon = <span className="text-theme-muted font-bold">✓</span>;
             }
             
-            // Titel bereinigen (Tracknummern vorne & .mp3 hinten entfernen)
-            const cleanSongName = item.songName
-              .replace(/^(\d+[\s\-–—]*)+/, '')
-              .replace(/\.mp3$/i, '');
-            
             return (
               <div
                 key={item.id}
@@ -92,7 +91,7 @@ export default function Playlist({
                   itemRefs.current[index] = el;
                 }}
                 onClick={() => onSelectTrack(index)}
-                className={`flex items-center justify-between p-0.5 cursor-pointer border ${
+                className={`flex items-center justify-between p-1 cursor-pointer border ${
                   isActive
                     ? 'bg-theme-accent/30 border-theme-border text-theme-text font-bold'
                     : isPlayed
@@ -104,9 +103,19 @@ export default function Playlist({
                   <span className="text-[10px] w-6 text-theme-text flex justify-center shrink-0 font-mono">
                     {statusIcon}
                   </span>
-                  <span className="truncate" title={cleanSongName}>
-                    {cleanSongName}
-                  </span>
+                  {/* Anzeige der aufbereiteten Metadaten */}
+                  <div className="flex flex-col truncate" title={item.songName}>
+                    <div className="truncate text-xs">
+                      {parsed.title}
+                    </div>
+                    {(parsed.artist || parsed.album) && (
+                      <div className="text-[9px] text-theme-muted truncate">
+                        {parsed.artist && <span className="text-theme-muted">{parsed.artist}</span>}
+                        {parsed.artist && parsed.album && <span> • </span>}
+                        {parsed.album && <span>{parsed.album}</span>}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
                 <button

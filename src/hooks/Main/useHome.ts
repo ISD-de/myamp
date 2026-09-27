@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import type { VisualizerRef } from '@/components/ui/Visualizer/Visualizer';
+import {useEffect, useRef, useState} from 'react';
 import {PlaylistItem} from '@/components/Catalog/Playlist/Playlist';
+import {VisualizerRef} from '@/components/Visualizer/Visualizer';
 
 export function useHome() {
   const [lastError, setLastError] = useState<string | null>(null);
@@ -27,6 +27,16 @@ export function useHome() {
   const [sourceNode, setSourceNode] = useState<MediaElementAudioSourceNode | null>(null);
   const [showVisSettings, setShowVisSettings] = useState<boolean>(false);
   const [isInactive, setIsInactive] = useState<boolean>(false);
+  const [inactivityDelay, setInactivityDelay] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('app-inactivity-delay');
+      if (saved) {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed)) return parsed;
+      }
+    }
+    return 5000;
+  });
   
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const visualizerRef = useRef<VisualizerRef | null>(null);
@@ -76,8 +86,8 @@ export function useHome() {
     
     fetch('/api/playlist', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedData),
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(updatedData)
     }).catch((err) => {
       console.warn('Fehler beim Speichern auf dem Server:', err);
     });
@@ -92,7 +102,7 @@ export function useHome() {
     setPlayedIds((prev) => {
       if (!prev.includes(uniqueId)) {
         const updated = [...prev, uniqueId];
-        saveToServer({ playedIds: updated });
+        saveToServer({playedIds: updated});
         return updated;
       }
       return prev;
@@ -102,7 +112,7 @@ export function useHome() {
   // 3. Server-Persistenz bei Änderungen
   useEffect(() => {
     if (!isLoaded) return;
-    saveToServer({ playlist, currentIndex, isShuffle, playedIds });
+    saveToServer({playlist, currentIndex, isShuffle, playedIds});
   }, [playlist, currentIndex, isShuffle, playedIds, isLoaded]);
   
   // 4. Auto Visualizer Preset bei Songwechsel
@@ -126,7 +136,7 @@ export function useHome() {
       }
       inactivityTimerRef.current = setTimeout(() => {
         setIsInactive(true);
-      }, 5000);
+      }, inactivityDelay);
     };
     
     window.addEventListener('mousemove', resetInactivityTimer);
@@ -145,7 +155,7 @@ export function useHome() {
       window.removeEventListener('click', resetInactivityTimer);
       window.removeEventListener('touchstart', resetInactivityTimer);
     };
-  }, [isPlaylistOpen]);
+  }, [isPlaylistOpen, inactivityDelay]);
   
   const onSelectFolder = (folder: string) => {
     setCurrentFolder(folder);
@@ -157,7 +167,7 @@ export function useHome() {
     const newItem: PlaylistItem = {
       id: `${currentFolder}/${song}`,
       folderName: currentFolder,
-      songName: song,
+      songName: song
     };
     
     setPlaylist((prev) => {
@@ -173,7 +183,7 @@ export function useHome() {
     const newItems: PlaylistItem[] = songs.map((song) => ({
       id: `${currentFolder}/${song}`,
       folderName: currentFolder,
-      songName: song,
+      songName: song
     }));
     
     setPlaylist((prev) => {
@@ -204,7 +214,7 @@ export function useHome() {
     
     setPlayedIds((prev) => {
       const updated = prev.filter((playedId) => playedId !== id);
-      saveToServer({ playedIds: updated });
+      saveToServer({playedIds: updated});
       return updated;
     });
   };
@@ -213,7 +223,7 @@ export function useHome() {
     setPlaylist([]);
     setCurrentIndex(-1);
     setPlayedIds([]);
-    saveToServer({ playlist: [], currentIndex: -1, isShuffle: false, playedIds: [] });
+    saveToServer({playlist: [], currentIndex: -1, isShuffle: false, playedIds: []});
   };
   
   const handleToggleShuffle = () => {
@@ -227,7 +237,7 @@ export function useHome() {
         setPlayedIds([]);
         newPlayed = [];
       }
-      saveToServer({ isShuffle: nextShuffle, playedIds: newPlayed });
+      saveToServer({isShuffle: nextShuffle, playedIds: newPlayed});
       return nextShuffle;
     });
   };
@@ -258,7 +268,7 @@ export function useHome() {
         
         const resetIds = currentUniqueId ? [currentUniqueId] : [];
         setPlayedIds(resetIds);
-        saveToServer({ playedIds: resetIds });
+        saveToServer({playedIds: resetIds});
       }
       
       const randomItem =
@@ -294,6 +304,12 @@ export function useHome() {
     } else {
       document.exitFullscreen().then();
     }
+  };
+
+  // Funktion zum Ändern und Speichern
+  const handleInactivityDelayChange = (newDelay: number) => {
+    setInactivityDelay(newDelay);
+    localStorage.setItem('app-inactivity-delay', newDelay.toString());
   };
   
   useEffect(() => {
@@ -349,5 +365,7 @@ export function useHome() {
     setAudioElement,
     setAudioContext,
     setSourceNode,
+    inactivityDelay,
+    handleInactivityDelayChange
   };
 }

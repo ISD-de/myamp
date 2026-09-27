@@ -8,6 +8,8 @@ import ThemeSelector from '@/components/ThemeSelector/ThemeSelector';
 import {useHome} from '@/hooks/Main/useHome';
 import Catalog from '@/components/Catalog/Catalog';
 import PlayerButton from '@/components/atoms/PlayerButton/PlayerButton';
+import ZoomControl from '@/components/atoms/ZoomControl/ZoomControl';
+import SettingsModal from '@/components/SettingsModal/SettingsModal';
 
 // WICHTIG: Visualizer nur auf dem Client (ohne SSR) laden, wegen butterchurn & window-Objekt
 const Visualizer = dynamic(
@@ -50,7 +52,9 @@ export default function Home(): React.JSX.Element {
     handlePresetChange,
     setAudioElement,
     setAudioContext,
-    setSourceNode
+    setSourceNode,
+    inactivityDelay,
+    handleInactivityDelayChange
   } = useHome();
   
   return (
@@ -125,38 +129,17 @@ export default function Home(): React.JSX.Element {
                                         onClearPlaylist={handleClearPlaylist}/>}
             
             {showVisSettings && (
-              <div
-                className="bg-theme-bg/80 backdrop-blur-md -mt-0.5 shrink-0">
-                <div className="flex flex-col">
-                  {/* THEME SELECTOR BAR */}
-                  <div className="shadow-2xl">
-                    <ThemeSelector/>
-                  </div>
-                  {/* VISUALIZER PRESET CONTROLLER */}
-                  <div
-                    className="flex flex-col gap-1 border-2 border-theme-border -mt-0.5 bg-theme-panel/90 backdrop-blur-md p-1.5 shadow-2xl">
-                    <div className="border-b border-theme-border/50 pb-1">
-                      <span className="text-[10px] text-theme-muted font-bold px-1 uppercase tracking-wider">
-                        Visuals:
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-1 pt-0.5">
-                      <PresetSelector onPresetChange={handlePresetChange}/>
-                      <div className="flex items-center gap-1">
-                        <PlayerButton
-                          onClick={() => setAutoPresetEnabled((prev) => !prev)}
-                          isActive={autoPresetEnabled}>🎲 Auto {autoPresetEnabled ? 'ON' : 'OFF'}</PlayerButton>
-                        <PlayerButton
-                          onClick={() => visualizerRef.current?.nextPreset()}
-                          disabled={!currentSong}
-                        >
-                          🔀 Nächstes
-                        </PlayerButton>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <SettingsModal
+                isOpen={showVisSettings}
+                onClose={() => setShowVisSettings(false)}
+                onPresetChange={handlePresetChange}
+                autoPresetEnabled={autoPresetEnabled}
+                setAutoPresetEnabled={setAutoPresetEnabled}
+                onNextPreset={() => visualizerRef.current?.nextPreset()}
+                isSongActive={!!currentSong}
+                inactivityDelay={inactivityDelay}
+                onInactivityDelayChange={handleInactivityDelayChange}
+              />
             )}
           </div>
         </div>
