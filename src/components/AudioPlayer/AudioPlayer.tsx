@@ -133,7 +133,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center flex-wrap justify-between gap-1.5">
                 <PlayerButton onClick={onPrevSong} disabled={!onPrevSong}>⏮</PlayerButton>
-                <PlayerButton onClick={togglePlay} isActive={isPlaying} disabled={!audioSrc}>{isPlaying
+                <PlayerButton onClick={togglePlay} isActive={true} disabled={!audioSrc}>{isPlaying
                   ? '▶'
                   : '❚❚'}</PlayerButton>
                 <PlayerButton onClick={onNextSong} disabled={!onNextSong}>⏭</PlayerButton>

@@ -140,7 +140,7 @@ export const SongLister = ({
   if (!folderName) {
     return (
       <div className="w-full h-fit p-3 text-xs text-theme-muted border-2 border-theme-border bg-theme-panel font-mono">
-        Bitte wähle ein Album aus.
+        Kein Albums ausgewählt.
       </div>
     );
   }
