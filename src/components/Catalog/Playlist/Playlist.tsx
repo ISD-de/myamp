@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 export interface PlaylistItem {
   id: string;
@@ -25,12 +25,23 @@ export default function Playlist({
                                    onRemoveTrack,
                                    onClearPlaylist,
                                  }: PlaylistProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+  
+  useEffect(() => {
+    if (currentIndex >= 0 && itemRefs.current[currentIndex]) {
+      itemRefs.current[currentIndex]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }
+  }, [currentIndex]);
+  
   return (
     <div className="flex flex-col h-full bg-theme-panel/40 border border-theme-border p-1 font-mono text-xs text-theme-text overflow-hidden">
       
       {/* HEADER */}
       <div className="flex items-center justify-between border-b border-theme-border/50 pb-1">
-        {/* ÄNDERUNG HIER: items-baseline statt items-center sorgt dafür, dass die Schriften auf derselben Zeile sitzen */}
         <div className="font-bold text-theme-text flex items-baseline gap-2">
           <div>PLAYLIST ({items.length})</div>
           {playedIds.length > 0 && (
@@ -50,7 +61,7 @@ export default function Playlist({
       </div>
       
       {/* TRACK LIST */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div ref={containerRef} className="flex-1 min-h-0 overflow-y-auto">
         {items.length === 0 ? (
           <div className="text-theme-muted/50 italic text-center py-4">
             Playlist ist leer
@@ -60,7 +71,6 @@ export default function Playlist({
             const isActive = index === currentIndex;
             const isPlayed = playedIds.includes(item.id);
             
-            // Ermittlung des passenden Symbols
             let statusIcon: React.ReactNode = index + 1;
             if (isActive && isPlayed) {
               statusIcon = <span className="text-theme-text font-bold">▶ ✓</span>;
@@ -70,9 +80,17 @@ export default function Playlist({
               statusIcon = <span className="text-theme-muted font-bold">✓</span>;
             }
             
+            // Titel bereinigen (Tracknummern vorne & .mp3 hinten entfernen)
+            const cleanSongName = item.songName
+              .replace(/^(\d+[\s\-–—]*)+/, '')
+              .replace(/\.mp3$/i, '');
+            
             return (
               <div
                 key={item.id}
+                ref={(el) => {
+                  itemRefs.current[index] = el;
+                }}
                 onClick={() => onSelectTrack(index)}
                 className={`flex items-center justify-between p-0.5 cursor-pointer border ${
                   isActive
@@ -86,8 +104,8 @@ export default function Playlist({
                   <span className="text-[10px] w-6 text-theme-text flex justify-center shrink-0 font-mono">
                     {statusIcon}
                   </span>
-                  <span className="truncate" title={item.songName}>
-                    {item.songName.replace('.mp3', '')}
+                  <span className="truncate" title={cleanSongName}>
+                    {cleanSongName}
                   </span>
                 </div>
                 
