@@ -1,7 +1,8 @@
 'use client';
 
-import React, {useEffect, useRef} from 'react';
-import {parseSongString} from '@/lib/ParsedSong';
+import React, { useEffect, useRef, useState } from 'react';
+import { parseSongString } from '@/lib/ParsedSong';
+import PlaylistModal from '@/components/Catalog/Playlist/PlaylistModal/PlaylistModal';
 
 export interface PlaylistItem {
   id: string;
@@ -17,6 +18,7 @@ interface PlaylistProps {
   onRemoveTrack: (id: string) => void;
   onClearPlaylist: () => void;
   onResetPlayed?: () => void;
+  onLoadPlaylist: (items: PlaylistItem[]) => void;
 }
 
 export default function Playlist({
@@ -26,10 +28,12 @@ export default function Playlist({
                                    onSelectTrack,
                                    onRemoveTrack,
                                    onClearPlaylist,
-                                   onResetPlayed
+                                   onResetPlayed,
+                                   onLoadPlaylist
                                  }: PlaylistProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
   
   useEffect(() => {
     if (currentIndex >= 0 && itemRefs.current[currentIndex]) {
@@ -39,6 +43,10 @@ export default function Playlist({
       });
     }
   }, [currentIndex]);
+  
+  const handleTogglePlaylistModal = () => {
+    setIsPlaylistModalOpen((prev) => !prev);
+  };
   
   return (
     <div
@@ -55,8 +63,16 @@ export default function Playlist({
           )}
         </div>
         
-        {/* BUTTONS FÜR RESET UND LEEREN */}
-        <div className="flex items-center gap-5">
+        {/* BUTTONS FÜR LISTEN, RESET UND LEEREN */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleTogglePlaylistModal}
+            className="text-theme-text transition text-[10px] bg-theme-bg border border-theme-border/70 hover:bg-theme-accent/20 px-1.5 py-0.5 active:scale-95 cursor-pointer"
+            title="Playlisten speichern oder laden"
+          >
+            Listen
+          </button>
+          
           {playedIds.length > 0 && onResetPlayed && (
             <button
               onClick={onResetPlayed}
@@ -66,6 +82,7 @@ export default function Playlist({
               Reset
             </button>
           )}
+          
           {items.length > 0 && (
             <button
               onClick={onClearPlaylist}
@@ -147,6 +164,17 @@ export default function Playlist({
           })
         )}
       </div>
+      
+      {/* MODAL */}
+      <PlaylistModal
+        isOpen={isPlaylistModalOpen}
+        onClose={() => setIsPlaylistModalOpen(false)}
+        currentPlaylist={items}
+        onLoadPlaylist={(loadedItems) => {
+          onLoadPlaylist(loadedItems);
+          setIsPlaylistModalOpen(false);
+        }}
+      />
     </div>
   );
 }

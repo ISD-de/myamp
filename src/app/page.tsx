@@ -7,6 +7,7 @@ import {useHome} from '@/hooks/Main/useHome';
 import Catalog from '@/components/Catalog/Catalog';
 import SettingsModal from '@/components/SettingsModal/SettingsModal';
 import {KeyboardProvider, useKeyboardShortcut} from '@/context/KeyboardContext';
+import {PlaylistItem} from '@/components/Catalog/Playlist/Playlist';
 
 const Visualizer = dynamic(
   () => import('@/components/Visualizer/Visualizer'),
@@ -95,7 +96,12 @@ export default function Home(): React.JSX.Element {
     setAudioContext,
     setSourceNode,
     inactivityDelay,
-    handleInactivityDelayChange
+    handleInactivityDelayChange,
+    
+    // WICHTIG: Diese 3 Setter müssen aus deinem useHome Hook exportiert sein!
+    setPlayedIds,
+    setPlaylist,
+    setCurrentIndex
   } = useHome();
   
   // Ref für die Mute-Funktion aus dem AudioPlayer
@@ -103,6 +109,14 @@ export default function Home(): React.JSX.Element {
   
   const handleNextPreset = () => {
     visualizerRef.current?.nextPreset();
+  };
+  
+  // LOGIK ZUM LADEN: Befindet sich nun INNERHALB der Home-Komponente,
+  // wo sie Zugriff auf setPlayedIds, setPlaylist und setCurrentIndex hat.
+  const handleLoadSavedPlaylist = (loadedItems: PlaylistItem[]) => {
+    if (setPlayedIds) setPlayedIds([]);
+    if (setPlaylist) setPlaylist(loadedItems);
+    if (setCurrentIndex) setCurrentIndex(0);
   };
   
   return (
@@ -181,6 +195,7 @@ export default function Home(): React.JSX.Element {
                   onRemoveTrack={handleRemoveFromPlaylist}
                   onClearPlaylist={handleClearPlaylist}
                   onResetPlayed={handleResetPlayed}
+                  onLoadPlaylist={handleLoadSavedPlaylist} // WICHTIG: Funktion an Catalog übergeben!
                 />
               )}
               

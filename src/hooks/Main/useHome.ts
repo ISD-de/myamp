@@ -121,7 +121,7 @@ export function useHome() {
     }
   }, [currentSong, autoPresetEnabled]);
   
-  // Inaktivitäts-Timer Logik TODO: configurable Tie and inactive at isPlaylistOpen
+  // Inaktivitäts-Timer Logik
   useEffect(() => {
     if (isPlaylistOpen) {
       setIsInactive(false);
@@ -308,8 +308,7 @@ export function useHome() {
       document.exitFullscreen().then();
     }
   };
-
-  // Funktion zum Ändern und Speichern
+  
   const handleInactivityDelayChange = (newDelay: number) => {
     setInactivityDelay(newDelay);
     localStorage.setItem('app-inactivity-delay', newDelay.toString());
@@ -370,6 +369,9 @@ export function useHome() {
     setAudioContext,
     setSourceNode,
     inactivityDelay,
-    handleInactivityDelayChange
+    handleInactivityDelayChange,
+    setPlayedIds,
+    setPlaylist,
+    setCurrentIndex
   };
 }

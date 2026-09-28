@@ -19,6 +19,7 @@ interface CatalogProps {
   onRemoveTrack: (id: string) => void;
   onClearPlaylist: () => void;
   onResetPlayed: () => void;
+  onLoadPlaylist: (loadedItems: PlaylistItem[]) => void;
 }
 
 export const Catalog = ({
@@ -32,7 +33,8 @@ export const Catalog = ({
                           onRemoveTrack,
                           onSelectTrack,
                           playedIds,
-                          onResetPlayed
+                          onResetPlayed,
+                          onLoadPlaylist
                         }: CatalogProps) => {
   // States für die Breiten- und Höhen-Prozentanteile bzw. Pixel
   const [leftWidth, setLeftWidth] = useState<number>(250); // Startbreite für Folder in Pixeln
@@ -133,6 +135,7 @@ export const Catalog = ({
                 onRemoveTrack={onRemoveTrack}
                 onClearPlaylist={onClearPlaylist}
                 onResetPlayed={onResetPlayed}
+                onLoadPlaylist={onLoadPlaylist}
               />
             </div>
           </div>
