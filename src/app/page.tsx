@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, {useRef} from 'react';
 import dynamic from 'next/dynamic';
 import AudioPlayer from '@/components/AudioPlayer/AudioPlayer';
 import {useHome} from '@/hooks/Main/useHome';
@@ -10,26 +10,25 @@ import {KeyboardProvider, useKeyboardShortcut} from '@/context/KeyboardContext';
 
 const Visualizer = dynamic(
   () => import('@/components/Visualizer/Visualizer'),
-  {ssr: false}
+  {ssr: false,loading: () => <div className="fixed inset-0 z-0 bg-theme-bg"/> }
 );
 
-// 1. Eine eigene Unterkomponente für die Shortcuts,
-// damit sie sauber innerhalb des KeyboardProviders läuft:
 function GlobalShortcuts({
                            audioSrc,
                            onNextPreset,
                            onNextSong,
+                           onToggleMute,
                            hasPlaylist
                          }: {
   audioSrc: string | null;
   onNextPreset: () => void;
   onNextSong?: () => void;
+  onToggleMute?: () => void;
   hasPlaylist: boolean;
 }) {
   useKeyboardShortcut(
     'GlobalPlayerShortcuts',
     (e) => {
-      // Ignorieren, wenn in Inputs getippt wird (wird zwar schon abgefangen, schadet aber nicht)
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
       
@@ -44,9 +43,15 @@ function GlobalShortcuts({
         e.preventDefault();
         onNextSong();
       }
+      
+      // 3. Taste "m" oder "M" -> Mute umschalten
+      if ((e.key === 'm' || e.key === 'M') && onToggleMute) {
+        e.preventDefault();
+        onToggleMute();
+      }
     },
     0,
-    [audioSrc, onNextPreset, onNextSong, hasPlaylist]
+    [audioSrc, onNextPreset, onNextSong, onToggleMute, hasPlaylist]
   );
   
   return null;
@@ -93,22 +98,24 @@ export default function Home(): React.JSX.Element {
     handleInactivityDelayChange
   } = useHome();
   
+  // Ref für die Mute-Funktion aus dem AudioPlayer
+  const toggleMuteRef = useRef<(() => void) | null>(null);
+  
   const handleNextPreset = () => {
     visualizerRef.current?.nextPreset();
   };
   
   return (
-    // 2. Der Provider umschließt das gesamte UI
     <KeyboardProvider>
-      {/* 3. Registriert den globalen Shortcut hier, damit er immer aktiv ist */}
       <GlobalShortcuts
         audioSrc={audioSrc}
         onNextPreset={handleNextPreset}
         onNextSong={playlist.length > 0 ? handleNextSong : undefined}
+        onToggleMute={() => toggleMuteRef.current?.()}
         hasPlaylist={playlist.length > 0}
       />
       
-      <main className="relative h-screen w-full bg-theme-bg text-theme-text font-mono overflow-hidden pointer-events-auto">
+      <main className="relative h-dvh w-full bg-theme-bg text-theme-text font-mono overflow-hidden pointer-events-auto">
         {/* VISUALIZER BACKGROUND */}
         <div
           ref={visualizerContainerRef}
@@ -144,6 +151,7 @@ export default function Home(): React.JSX.Element {
                   onToggleShuffle={handleToggleShuffle}
                   showVisualizerSettings={showVisSettings}
                   onToggleVisualizerSettings={() => setShowVisSettings(!showVisSettings)}
+                  onToggleMuteRef={(fn) => { toggleMuteRef.current = fn; }}
                   onAudioElementReady={(node, ctx, source) => {
                     if (node && ctx && source) {
                       try {

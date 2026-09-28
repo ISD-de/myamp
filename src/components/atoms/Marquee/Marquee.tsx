@@ -16,7 +16,6 @@ export const Marquee: React.FC<MarqueeProps> = ({ text, speed = 220 }) => {
     const paddedText = `   ${rawText}   ■`;
     
     // Feste Anzahl von Zeichen, die im Anzeigefenster sichtbar sein sollen
-    // (Passt perfekt in die typische Winamp-Header-Breite bei Monospace)
     const windowSize = 40;
     let currentIndex = 0;
     
@@ -35,11 +34,25 @@ export const Marquee: React.FC<MarqueeProps> = ({ text, speed = 220 }) => {
   
   return (
     <div className="w-full flex justify-center overflow-hidden select-none bg-transparent">
-      <div className="text-3xl text-[#ffffffa0] whitespace-pre">
+      {/*
+        text-shadow Erklärung für den 3D-Glow-Effekt:
+        1. Schwarzer Schatten nach rechts unten (gibt den 3D-Plastik-/Präge-Look)
+        2. Heller Glow-Effekt (z.B. in Akzentfarbe oder weiss) der nach außen strahlt
+      */}
+      <div
+        className="text-4xl text-white font-bold whitespace-pre tracking-wider"
+        style={{
+          textShadow: `
+            2px 2px 0px rgba(0, 0, 0, 0.9),
+            0 0 10px rgba(255, 255, 255, 0.4),
+            0 0 20px rgba(100, 150, 255, 0.2)
+          `
+        }}
+      >
         {displayText}
       </div>
     </div>
   );
 };
 
-export default Marquee;
+export default Marquee; // bzw. export default Marquee;

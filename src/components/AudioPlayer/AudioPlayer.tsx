@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Marquee2D from '@/components/atoms/Marquee/Marquee2D';
 import Equalizer from '@/components/Equalizer/Equalizer';
 import {useAudioPlayer} from '@/hooks/AudioPlayer/useAudioPlayer';
@@ -23,6 +23,7 @@ interface AudioPlayerProps {
     context: AudioContext,
     source: MediaElementAudioSourceNode
   ) => void;
+  onToggleMuteRef?: (toggleFn: () => void) => void;
 }
 
 export const AudioPlayer: React.FC<AudioPlayerProps> = ({
@@ -36,7 +37,8 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                                                           onToggleShuffle,
                                                           showVisualizerSettings = false,
                                                           onToggleVisualizerSettings,
-                                                          onAudioElementReady
+                                                          onAudioElementReady,
+                                                          onToggleMuteRef
                                                         }) => {
   const {
     audioRef,
@@ -67,9 +69,16 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
     onAudioElementReady
   });
   
+  // Reicht die toggleMute-Funktion an den Parent (page.tsx) weiter
+  useEffect(() => {
+    if (onToggleMuteRef) {
+      onToggleMuteRef(toggleMute);
+    }
+  }, [toggleMute, onToggleMuteRef]);
+  
   return (
     <>
-      <div className="flex flex-col w-full font-mono text-theme-text select-none">
+      <div className="flex flex-col w-full h-auto shrink-0 font-mono text-theme-text select-none">
         <audio
           ref={audioRef}
           onTimeUpdate={() => {

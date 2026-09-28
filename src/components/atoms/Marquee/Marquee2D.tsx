@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useEffect, useRef } from 'react';
 
 interface MarqueeCanvasProps {
@@ -18,6 +20,7 @@ export const Marquee2D: React.FC<MarqueeCanvasProps> = ({
     if (!ctx) return;
     
     const dpr = window.devicePixelRatio || 1;
+    // Wir nutzen die tatsächliche Breite des Parent-Elements, fangen 0 aber sicher ab
     const width = canvas.parentElement?.clientWidth || 300;
     const height = 24;
     
@@ -84,8 +87,9 @@ export const Marquee2D: React.FC<MarqueeCanvasProps> = ({
   }, [text, speed]);
   
   return (
-    <div className="w-full overflow-hidden select-none bg-transparent flex items-center">
-      <canvas ref={canvasRef} className="block w-full" />
+    /* HIER GEÄNDERT: Feste Höhe von 24px (h-[24px]) zwingt den Container von Beginn an in die richtige Form */
+    <div className="w-full h-6 overflow-hidden select-none bg-transparent flex items-center shrink-0">
+      <canvas ref={canvasRef} className="block h-6" />
     </div>
   );
 };
