@@ -2,12 +2,12 @@
 
 import React, {useRef} from 'react';
 import dynamic from 'next/dynamic';
-import AudioPlayer from '@/components/AudioPlayer/AudioPlayer';
 import {useHome} from '@/hooks/Main/useHome';
 import Catalog from '@/components/Catalog/Catalog';
 import SettingsModal from '@/components/SettingsModal/SettingsModal';
 import {KeyboardProvider, useKeyboardShortcut} from '@/context/KeyboardContext';
 import {PlaylistItem} from '@/components/Catalog/Playlist/Playlist';
+import AudioPlayer from '@/components/AudioPlayer/AudioPlayer';
 
 const Visualizer = dynamic(
   () => import('@/components/Visualizer/Visualizer'),
@@ -79,6 +79,8 @@ export default function Home(): React.JSX.Element {
     isInactive,
     visualizerRef,
     visualizerContainerRef,
+    isVisualizerEnabled,
+    setIsVisualizerEnabled,
     currentSong,
     audioSrc,
     onSelectFolder,
@@ -130,12 +132,14 @@ export default function Home(): React.JSX.Element {
       />
       
       <main className="relative h-dvh w-full bg-theme-bg text-theme-text font-mono overflow-hidden pointer-events-auto">
-        {/* VISUALIZER BACKGROUND */}
+        {/* VISUALIZER BACKGROUND (Nur rendern/anzeigen, wenn aktiviert) */}
         <div
           ref={visualizerContainerRef}
-          className="fixed inset-0 z-0 w-full pointer-events-none"
+          className={`fixed inset-0 z-0 w-full pointer-events-none transition-opacity duration-500 ${
+            isVisualizerEnabled ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
         >
-          {audioElement && audioContext && sourceNode && (
+          {isVisualizerEnabled && audioElement && audioContext && sourceNode && (
             <Visualizer
               ref={visualizerRef}
               audioElement={audioElement}
@@ -179,6 +183,8 @@ export default function Home(): React.JSX.Element {
                       setSourceNode(source);
                     }
                   }}
+                  isVisualizerEnabled={isVisualizerEnabled}
+                  onToggleVisualizer={() => setIsVisualizerEnabled(!isVisualizerEnabled)}
                 />
               </div>
               
@@ -195,7 +201,7 @@ export default function Home(): React.JSX.Element {
                   onRemoveTrack={handleRemoveFromPlaylist}
                   onClearPlaylist={handleClearPlaylist}
                   onResetPlayed={handleResetPlayed}
-                  onLoadPlaylist={handleLoadSavedPlaylist} // WICHTIG: Funktion an Catalog übergeben!
+                  onLoadPlaylist={handleLoadSavedPlaylist}
                 />
               )}
               

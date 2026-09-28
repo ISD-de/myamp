@@ -18,6 +18,11 @@ interface AudioPlayerProps {
   onToggleShuffle?: () => void;
   showVisualizerSettings?: boolean;
   onToggleVisualizerSettings?: () => void;
+  
+  // NEUE PROPS FÜR DEN VISUALIZER-SCHALTER:
+  isVisualizerEnabled?: boolean;
+  onToggleVisualizer?: () => void;
+  
   onAudioElementReady?: (
     element: HTMLAudioElement,
     context: AudioContext,
@@ -37,6 +42,8 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                                                           onToggleShuffle,
                                                           showVisualizerSettings = false,
                                                           onToggleVisualizerSettings,
+                                                          isVisualizerEnabled = true,
+                                                          onToggleVisualizer,
                                                           onAudioElementReady,
                                                           onToggleMuteRef
                                                         }) => {
@@ -153,7 +160,16 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
               {onOpenPlaylist && <PlayerButton onClick={onOpenPlaylist} isActive={isPlaylistOpen}>≡♪</PlayerButton>}
             </div>
             
-            <div>
+            {/* HIER: VISUALIZER-SCHALTER LINKS NEBEN DEM EQ-BUTTON */}
+            <div className="flex items-center gap-1.5">
+              {onToggleVisualizer && (
+                <PlayerButton
+                  onClick={onToggleVisualizer}
+                  isActive={isVisualizerEnabled}
+                >
+                  VIS
+                </PlayerButton>
+              )}
               <PlayerButton onClick={() => setShowEq(!showEq)} isActive={showEq}>EQ</PlayerButton>
               {onToggleVisualizerSettings &&
                 <PlayerButton onClick={onToggleVisualizerSettings}

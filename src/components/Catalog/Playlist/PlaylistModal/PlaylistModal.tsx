@@ -93,12 +93,12 @@ export default function PlaylistModal({
   };
   
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 font-mono text-xs text-theme-text">
+    <div className="fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center p-4 font-mono text-xs text-theme-text">
       <div className="bg-theme-panel border-2 border-theme-border w-full max-w-md p-4 flex flex-col gap-4 shadow-2xl">
         
         {/* HEADER */}
         <div className="flex justify-between items-center border-b border-theme-border/50 pb-2">
-          <div className="font-bold text-sm">PLAYLIST SPEICHERN / LADEN (JSON)</div>
+          <div className="font-bold text-sm">PLAYLIST SPEICHERN / LADEN</div>
           <button onClick={onClose} className="text-theme-muted hover:text-red-400 text-sm cursor-pointer">
             ✕
           </button>

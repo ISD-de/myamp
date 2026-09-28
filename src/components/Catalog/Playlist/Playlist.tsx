@@ -73,11 +73,12 @@ export default function Playlist({
             Listen
           </button>
           
-          {playedIds.length > 0 && onResetPlayed && (
+          {onResetPlayed && (
             <button
-              onClick={onResetPlayed}
-              className="text-theme-text transition text-[10px] bg-theme-bg border border-theme-border/70 hover:bg-theme-accent/20 px-1.5 py-0.5 active:scale-95 cursor-pointer"
+              onClick={()=>onLoadPlaylist(items)}
+              className="text-theme-text transition text-[10px] bg-theme-bg border border-theme-border/70 hover:bg-theme-accent/20 px-1.5 py-0.5 active:scale-95 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-theme-bg"
               title="Alle als ungespielt markieren"
+              disabled={playedIds.length === 0}
             >
               Reset
             </button>
@@ -93,8 +94,8 @@ export default function Playlist({
             </button>
           )}
         </div>
-      </div>
-      
+        </div>
+        
       {/* TRACK LIST */}
       <div ref={containerRef} className="flex-1 min-h-0 overflow-y-auto">
         {items.length === 0 ? (

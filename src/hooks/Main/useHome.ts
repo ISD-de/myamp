@@ -40,6 +40,7 @@ export function useHome() {
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const visualizerRef = useRef<VisualizerRef | null>(null);
   const visualizerContainerRef = useRef<HTMLDivElement | null>(null);
+  const [isVisualizerEnabled, setIsVisualizerEnabled] = useState<boolean>(false);
   
   const currentItem =
     currentIndex >= 0 && currentIndex < playlist.length ? playlist[currentIndex] : null;
@@ -352,6 +353,8 @@ export function useHome() {
     isInactive,
     visualizerRef,
     visualizerContainerRef,
+    isVisualizerEnabled,
+    setIsVisualizerEnabled,
     currentSong,
     audioSrc,
     onSelectFolder,
