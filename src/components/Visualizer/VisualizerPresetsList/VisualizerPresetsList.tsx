@@ -1,7 +1,8 @@
 'use client';
 
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import butterchurnPresets from 'butterchurn-presets';
+import { getPresets as getBaronPresets } from 'butterchurn-presets-baron';
 
 interface PresetSelectorProps {
   onPresetChange: (presetData: any, presetName: string) => void;
@@ -18,7 +19,10 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
   
   useEffect(() => {
     // Presets beim Mounten einmalig laden
-    const loadedPresets = butterchurnPresets.getPresets();
+    const loadedPresets = {
+      ...butterchurnPresets.getPresets(),
+      ...getBaronPresets({ random: true, count: 500 }) // Lädt z.B. 500 zusätzliche Presets
+    };
     const keys = Object.keys(loadedPresets);
     
     setPresets(loadedPresets);
@@ -46,10 +50,10 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
     <select
       value={selectedPreset}
       onChange={handleChange}
-      className={`bg-player-border text-white text-xs border border-player-border px-2 py-1 max-w-62.5 truncate focus:outline-none cursor-pointer ${className}`}
+      className={`bg-theme-bg text-theme-text text-xs border border-theme-border px-2 py-1 max-w-62.5 truncate focus:outline-none cursor-pointer ${className}`}
     >
       {presetKeys.map((name) => (
-        <option key={name} value={name}>
+        <option key={name} value={name} className="bg-theme-panel text-theme-text">
           {name}
         </option>
       ))}

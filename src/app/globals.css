@@ -1,41 +1,88 @@
 @import "tailwindcss";
 
-@theme{
-    --color-background: #222222;
-    --color-background-hover: #2a2a2a;
-    --color-border:#333333;
-    --color-text:#eeeeee;
-    --color-text-light:#aaaabb;
+/* 1. Theme-Variablen & Farbschemata */
+@layer base {
+    :root, [data-theme="dark"] {
+        --theme-bg: #121212;
+        --theme-panel: #1e1e1e;
+        --theme-border: #333333;
+        --theme-text: #e0e0e0;
+        --theme-muted: #757575;
+        --theme-accent: #3b82f6;
+        --theme-glow: #3b82f6aa;
+    }
 
+    [data-theme="orange"] {
+        --theme-bg: #471d01;
+        --theme-panel: #301402;
+        --theme-border: #df7c2a;
+        --theme-text: #ffffff;
+        --theme-muted: #b8ada0;
+        --theme-accent: #eb6d14;
+        --theme-glow: rgb(246 239 232 / 0.53);
+    }
 
-    --color-player-bg:#23272b;
-    --color-player-border:#15171a;
-    --color-player-eq-bg:#18191b;
-    --color-player-accent:#b0b5c0;
-    --color-player-text-info: #999999;
-    --color-player-text-disabled: #1c6977;
-    --color-player-text-muted: #28c0db;
-    --color-player-text-highlight: #00ffcc;
-    --color-player-divider: #2d3137;
+    [data-theme="green"] {
+        --theme-bg: #050b05;
+        --theme-panel: #0d1a0d;
+        --theme-border: #00ff41;
+        --theme-text: #00ff41;
+        --theme-muted: #008f11;
+        --theme-accent: #00ff41;
+        --theme-glow: #00ff41aa;
+    }
+
+    [data-theme="light"] {
+        --theme-bg: #ffffff;
+        --theme-panel: #aaaaaa;
+        --theme-border: #222222;
+        --theme-text: #445566;
+        --theme-muted: #111111;
+        --theme-accent: #444444;
+        --theme-glow: #888888;
+    }
+
 }
 
-::-webkit-scrollbar {
-    width: 10px;
+/* 2. Zuweisung an Tailwind v4 Utilities */
+@theme {
+    --color-theme-bg: var(--theme-bg);
+    --color-theme-panel: var(--theme-panel);
+    --color-theme-border: var(--theme-border);
+    --color-theme-text: var(--theme-text);
+    --color-theme-muted: var(--theme-muted);
+    --color-theme-accent: var(--theme-accent);
+    --color-theme-glow: var(--theme-glow);
 }
 
-::-webkit-scrollbar-track {
-    background: var(--color-background);
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--color-text-light);
-    border-radius: 9999px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--color-text);
-}
-
+/* 3. Basis-Restyling */
 body {
-    font-family: Arial, Helvetica, sans-serif;
+    background-color: var(--theme-bg);
+    color: var(--theme-text);
+    font-family: monospace;
+}
+
+/* Custom Retro Scrollbar für die gesamte App */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--theme-border) var(--theme-bg);
+}
+
+*::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+    background: var(--theme-bg);
+    border-left: 1px solid var(--theme-border);
+}
+
+*::-webkit-scrollbar-thumb {
+    background: var(--theme-border);
+    border-radius: 0;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--theme-accent);
 }

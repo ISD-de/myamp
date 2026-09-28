@@ -1,209 +1,136 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import Equalizer from '@/components/AudioPlayer/Equalizer';
-import * as musicMetadata from 'music-metadata-browser';
+import React, { useEffect } from 'react';
+import Marquee2D from '@/components/atoms/Marquee/Marquee2D';
+import Equalizer from '@/components/Equalizer/Equalizer';
+import {useAudioPlayer} from '@/hooks/AudioPlayer/useAudioPlayer';
+import PlayerButton from '@/components/atoms/PlayerButton/PlayerButton';
+import MarqueeBottom from '@/components/atoms/Marquee/MarquueBottom';
 
 interface AudioPlayerProps {
   audioSrc: string | null;
-  currentSong: string | null;
-  onAudioElementReady: (
-    node: HTMLAudioElement | null,
-    audioContext: AudioContext | null,
-    sourceNode: MediaElementAudioSourceNode | null
-  ) => void;
+  currentSong?: string | null;
   onNextSong?: () => void;
   onPrevSong?: () => void;
   onOpenPlaylist?: () => void;
-  isShuffle: boolean;
-  onToggleShuffle: () => void;
+  isShuffle?: boolean;
+  isPlaylistOpen?: boolean;
+  onToggleShuffle?: () => void;
+  showVisualizerSettings?: boolean;
+  onToggleVisualizerSettings?: () => void;
+  
+  // NEUE PROPS FÜR DEN VISUALIZER-SCHALTER:
+  isVisualizerEnabled?: boolean;
+  onToggleVisualizer?: () => void;
+  
+  onAudioElementReady?: (
+    element: HTMLAudioElement,
+    context: AudioContext,
+    source: MediaElementAudioSourceNode
+  ) => void;
+  onToggleMuteRef?: (toggleFn: () => void) => void;
 }
 
 export const AudioPlayer: React.FC<AudioPlayerProps> = ({
                                                           audioSrc,
                                                           currentSong,
-                                                          onAudioElementReady,
                                                           onNextSong,
                                                           onPrevSong,
                                                           onOpenPlaylist,
-                                                          isShuffle,
-                                                          onToggleShuffle
+                                                          isShuffle = false,
+                                                          isPlaylistOpen = false,
+                                                          onToggleShuffle,
+                                                          showVisualizerSettings = false,
+                                                          onToggleVisualizerSettings,
+                                                          isVisualizerEnabled = true,
+                                                          onToggleVisualizer,
+                                                          onAudioElementReady,
+                                                          onToggleMuteRef
                                                         }) => {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const {
+    audioRef,
+    audioContextRef,
+    sourceNodeRef,
+    isPlaying,
+    duration,
+    currentTime,
+    volume,
+    isMuted,
+    showEq,
+    setShowEq,
+    bitrate,
+    sampleRate,
+    extractedTitle,
+    togglePlay,
+    handleVolumeChange,
+    toggleMute,
+    handleSeek,
+    handleEnded,
+    formatTime,
+    setCurrentTime,
+    setDuration
+  } = useAudioPlayer({
+    audioSrc,
+    currentSong,
+    onNextSong,
+    onAudioElementReady
+  });
   
-  // Web Audio API Refs
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
-  
-  // Web Audio States
-  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
-  const [sourceNode, setSourceNode] = useState<MediaElementAudioSourceNode | null>(null);
-  
-  // Player States
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [currentTime, setCurrentTime] = useState<number>(0);
-  const [duration, setDuration] = useState<number>(0);
-  const [volume, setVolume] = useState<number>(0.8);
-  const [isMuted, setIsMuted] = useState<boolean>(false);
-  
-  const [bitrate, setBitrate] = useState<number | null>(null);
-  const [sampleRate, setSampleRate] = useState<number | null>(null);
-  const [isEqualizerOpen, setIsEqualizerOpen] = useState(false);
-  
-  // Initialisierung AudioContext & SourceNode - Einmalig pro Audio-Element
-  const handleAudioRef = (node: HTMLAudioElement | null) => {
-    if (!node) return;
-    
-    audioRef.current = node;
-    
-    if (node && !sourceNodeRef.current) {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      const ctx = audioContextRef.current || new AudioCtx();
-      audioContextRef.current = ctx;
-      
-      try {
-        const source = ctx.createMediaElementSource(node);
-        sourceNodeRef.current = source;
-        setAudioContext(ctx);
-        setSourceNode(source);
-        onAudioElementReady(node, ctx, source);
-      } catch (err) {
-        console.warn('SourceNode existiert bereits:', err);
-      }
-    } else if (!node) {
-      onAudioElementReady(null, null, null);
-    }
-  };
-  
-  // Play-State & Autoplay
+  // Reicht die toggleMute-Funktion an den Parent (page.tsx) weiter
   useEffect(() => {
-    if (audioSrc && audioRef.current) {
-      if (audioContextRef.current?.state === 'suspended') {
-        audioContextRef.current.resume().then();
-      }
-      audioRef.current.src = audioSrc;
-      audioRef.current.load();
-      audioRef.current
-        .play()
-        .then(() => setIsPlaying(true))
-        .catch(() => setIsPlaying(false));
+    if (onToggleMuteRef) {
+      onToggleMuteRef(toggleMute);
     }
-  }, [audioSrc]);
-  
-  useEffect(() => {
-    if (!audioSrc) return;
-    
-    const fetchMetadata = async () => {
-      try {
-        const metadata = await musicMetadata.fetchFromUrl(audioSrc);
-        
-        if (metadata.format.bitrate) {
-          setBitrate(Math.round(metadata.format.bitrate / 1000));
-        }
-        if (metadata.format.sampleRate) {
-          setSampleRate(Math.round(metadata.format.sampleRate / 1000));
-        }
-      } catch (err) {
-        console.warn('Metadaten konnten nicht gelesen werden:', err);
-      }
-    };
-    
-    fetchMetadata();
-  }, [audioSrc]);
-  
-  useEffect(() => {
-    if (audioRef.current && audioContextRef.current && sourceNodeRef.current) {
-      onAudioElementReady(
-        audioRef.current,
-        audioContextRef.current,
-        sourceNodeRef.current
-      );
-    }
-  }, [audioSrc]);
-  
-  // Steuerungshandler
-  const handlePlay = () => {
-    if (!audioRef.current || !audioSrc) return;
-    if (audioContextRef.current?.state === 'suspended') {
-      audioContextRef.current.resume();
-    }
-    audioRef.current.play();
-    setIsPlaying(true);
-  };
-  
-  const handlePause = () => {
-    if (!audioRef.current) return;
-    audioRef.current.pause();
-    setIsPlaying(false);
-  };
-  
-  const handleStop = () => {
-    if (!audioRef.current) return;
-    audioRef.current.pause();
-    audioRef.current.currentTime = 0;
-    setIsPlaying(false);
-    setCurrentTime(0);
-  };
-  
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newTime = parseFloat(e.target.value);
-    if (audioRef.current) {
-      audioRef.current.currentTime = newTime;
-      setCurrentTime(newTime);
-    }
-  };
-  
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVolume = parseFloat(e.target.value);
-    setVolume(newVolume);
-    if (audioRef.current) {
-      audioRef.current.volume = newVolume;
-      setIsMuted(newVolume === 0);
-    }
-  };
-  
-  const toggleMute = () => {
-    if (audioRef.current) {
-      const nextMute = !isMuted;
-      audioRef.current.muted = nextMute;
-      setIsMuted(nextMute);
-    }
-  };
-  
-  const formatTime = (seconds: number) => {
-    if (isNaN(seconds)) return '00:00';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+  }, [toggleMute, onToggleMuteRef]);
   
   return (
-    <div className="flex flex-col gap-1 ">
-      <div className="bg-player-bg border-2 border-player-border p-2 font-mono select-none text-text">
-        <div className="bg-black border border-player-border p-2 flex flex-col justify-between h-17 relative overflow-hidden">
-          <div className="flex items-center justify-between text-xs text-player-text-muted font-bold tracking-tight">
-            <div className="flex flex-col gap-0.5 text-[8px] text-player-text-disabled leading-none">
-              <span className={isPlaying ? 'text-player-text-highlight' : ''}>▲ PLAY</span>
-              <span className={!isPlaying && currentTime > 0 ? 'text-player-text-highlight' : ''}>❚❚ PAUSE</span>
+    <>
+      <div className="flex flex-col w-full h-auto shrink-0 font-mono text-theme-text select-none">
+        <audio
+          ref={audioRef}
+          onTimeUpdate={() => {
+            if (audioRef.current) setCurrentTime(audioRef.current.currentTime);
+          }}
+          onLoadedMetadata={() => {
+            if (audioRef.current) setDuration(audioRef.current.duration);
+          }}
+          onError={(e) => {
+            const audioElement = e.currentTarget;
+            const errorCode = audioElement.error?.code;
+            
+            if (errorCode === 1) return;
+            
+            console.warn("Fehler beim Laden des Tracks:", {
+              code: errorCode,
+              message: audioElement.error?.message
+            });
+            
+            if (onNextSong) onNextSong();
+          }}
+          onEnded={handleEnded}
+          crossOrigin="anonymous"
+        />
+        
+        <div className="p-3 w-full">
+          {/* HEADER MIT DYNAMISCH BERECHNETER BITRATE & SAMPLERATE */}
+          <div className="bg-theme-bg/80 border border-theme-border/60 p-2 mb-3 flex flex-col gap-1">
+            <div className="flex justify-between items-center text-[10px] text-theme-muted">
+              <div className="flex items-center gap-2">
+                <span>CURRENT TRACK</span>
+                {(bitrate || sampleRate) && (
+                  <span className="text-theme-accent font-bold tracking-tight">
+                  {bitrate ? `${bitrate}kbps` : ''} {sampleRate ? `/ ${sampleRate}kHz` : ''}
+                </span>
+                )}
+              </div>
+              <span className="font-bold text-theme-border">
+              {isPlaying ? '▶ PLAYING' : '❚❚ PAUSED'}
+            </span>
             </div>
-            <div className="flex-1 ml-3 overflow-hidden whitespace-nowrap text-ellipsis text-right text-player-text-highlight font-mono">
-              {currentSong ? currentSong.replace('.mp3', '') : 'WINAMP: NO FILE LOADED'}
-            </div>
+            <Marquee2D text={extractedTitle} speed={50}/>
           </div>
-          <div className="flex justify-between items-end text-[10px] text-player-text-disable">
-            <div className="flex items-center gap-2">
-              <span className="text-[14px] font-bold text-player-text-highlight font-mono leading-none">
-                {formatTime(currentTime)}
-              </span>
-              <span className="text-xs text-player-text-info">/ {formatTime(duration)}</span>
-            </div>
-            <div className="flex gap-2 text-[9px] font-bold text-player-text-disabled">
-              <span><strong className="text-player-text-highlight">{bitrate}</strong> KBPS</span>
-              <span><strong className="text-player-text-highlight">{sampleRate}</strong> KHZ</span>
-              <span className="text-player-text-highlight">STEREO</span>
-            </div>
-          </div>
-          <div>
+          
+          <div className="flex flex-col gap-1 mb-3">
             <input
               type="range"
               min="0"
@@ -211,125 +138,66 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
               value={currentTime}
               onChange={handleSeek}
               disabled={!audioSrc}
-              className="w-full h-1 bg-player-bg appearance-none cursor-pointer accent-player-text-highlight"
+              className="w-full h-2 bg-theme-bg appearance-none cursor-pointer accent-theme-accent disabled:opacity-30"
             />
+            <div className="flex justify-between text-[10px] text-theme-muted font-bold">
+              <span>{formatTime(currentTime)}</span>
+              <span>{formatTime(duration)}</span>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center flex-wrap justify-between gap-1.5">
+              <PlayerButton onClick={onPrevSong} disabled={!onPrevSong || isShuffle}>⏮</PlayerButton>
+              <PlayerButton onClick={togglePlay} isActive={true} disabled={!audioSrc}>{isPlaying
+                ? '▶'
+                : '❚❚'}</PlayerButton>
+              <PlayerButton onClick={onNextSong} disabled={!onNextSong}>⏭</PlayerButton>
+              {onToggleShuffle &&
+                <PlayerButton onClick={onToggleShuffle} isActive={isShuffle}>{isShuffle
+                  ? '312'
+                  : '123'}</PlayerButton>}
+              {onOpenPlaylist && <PlayerButton onClick={onOpenPlaylist} isActive={isPlaylistOpen}>≡♪</PlayerButton>}
+            </div>
+            
+            {/* HIER: VISUALIZER-SCHALTER LINKS NEBEN DEM EQ-BUTTON */}
+            <div className="flex items-center gap-1.5">
+              {onToggleVisualizer && (
+                <PlayerButton
+                  onClick={onToggleVisualizer}
+                  isActive={isVisualizerEnabled}
+                >
+                  VIS
+                </PlayerButton>
+              )}
+              <PlayerButton onClick={() => setShowEq(!showEq)} isActive={showEq}>EQ</PlayerButton>
+              {onToggleVisualizerSettings &&
+                <PlayerButton onClick={onToggleVisualizerSettings}
+                              isActive={showVisualizerSettings}>⚙️</PlayerButton>}
+            </div>
+            
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
+                <PlayerButton onClick={toggleMute}>{isMuted ? '🔇' : '🔊'}</PlayerButton>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={isMuted ? 0 : volume}
+                  onChange={handleVolumeChange}
+                  className="flex-1 h-1 bg-theme-bg appearance-none cursor-pointer accent-theme-accent border-0"
+                />
+              </div>
+            </div>
           </div>
         </div>
-        <div className="flex items-center justify-between px-1 mb-2 bg-player-bg p-1.5 border border-player-border">
-          <button
-            onClick={toggleMute}
-            className={`px-2 py-0.5 border text-xs font-bold transition active:scale-95 ${
-              isMuted
-                ? 'bg-[#5a1c1c] text-[#ff6666] border-[#8b0000]'
-                : 'bg-linear-to-b from-[#4a4e57] to-[#2b2d33] text-white border-[#5a5f6b]'
-            }`}
-          >
-            {isMuted ? '🔇 MUTE' : '🔊 VOL'}
-          </button>
-          <div className="flex-1 mx-3 flex items-center">
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.01"
-              value={isMuted ? 0 : volume}
-              onChange={handleVolumeChange}
-              className="w-full h-2 bg-player-border rounded appearance-none cursor-pointer accent-player-accent"
-            />
-          </div>
+        <div className="border-t border-theme-border/80">
+          <Equalizer audioContext={audioContextRef.current} sourceNode={sourceNodeRef.current} showUi={showEq}/>
         </div>
-        <div className="flex items-center justify-between pt-1 border-t border-player-divider">
-          <div className="flex items-center mt-1 gap-1">
-            <button
-              onClick={onPrevSong}
-              disabled={!onPrevSong || !audioSrc}
-              className="w-8 h-7 bg-linear-to-b from-[#4f535d] via-[#353840] to-[#222429] hover:from-[#5c616d] text-white font-bold border border-[#555a66] rounded shadow-inner active:border-[#111] text-xs flex items-center justify-center"
-              title="Previous"
-            >
-              ⏮
-            </button>
-            <button
-              onClick={handlePlay}
-              disabled={!audioSrc}
-              className="w-8 h-7 bg-linear-to-b from-[#4f535d] via-[#353840] to-[#222429] hover:from-[#5c616d] text-white font-bold border border-[#555a66] rounded shadow-inner active:border-[#111] text-xs flex items-center justify-center"
-              title="Play"
-            >
-              ▶
-            </button>
-            <button
-              onClick={handlePause}
-              disabled={!audioSrc}
-              className="w-8 h-7 bg-linear-to-b from-[#4f535d] via-[#353840] to-[#222429] hover:from-[#5c616d] text-white font-bold border border-[#555a66] rounded shadow-inner active:border-[#111] text-xs flex items-center justify-center"
-              title="Pause"
-            >
-              ❚❚
-            </button>
-            <button
-              onClick={handleStop}
-              disabled={!audioSrc}
-              className="w-8 h-7 bg-linear-to-b from-[#4f535d] via-[#353840] to-[#222429] hover:from-[#5c616d] text-white font-bold border border-[#555a66] rounded shadow-inner active:border-[#111] text-xs flex items-center justify-center"
-              title="Stop"
-            >
-              ■
-            </button>
-            <button
-              onClick={onNextSong}
-              disabled={!onNextSong || !audioSrc}
-              className="w-8 h-7 bg-linear-to-b from-[#4f535d] via-[#353840] to-[#222429] hover:from-[#5c616d] text-white font-bold border border-[#555a66] rounded shadow-inner active:border-[#111] text-xs flex items-center justify-center"
-              title="Next"
-            >
-              ⏭
-            </button>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <button
-              className="w-7 h-7 bg-linear-to-b from-[#4f535d] to-[#222429] text-white text-xs border border-[#555a66] rounded flex items-center justify-center"
-              title="Media Explorer & Playlist öffnen"
-              onClick={onOpenPlaylist}
-            >
-              ⏏
-            </button>
-            <button
-              onClick={() => setIsEqualizerOpen(!isEqualizerOpen)}
-              className={`px-1.5 h-7 text-[12px] font-bold border rounded ${
-                isEqualizerOpen
-                  ? 'bg-[#00ffcc] text-black border-[#00ffcc] shadow-[0_0_5px_#00ffcc]'
-                  : 'bg-[#222429] text-[#777] border-[#444]'
-              }`}
-            >
-              EQ
-            </button>
-            <button
-              type="button"
-              onClick={onToggleShuffle}
-              title={isShuffle ? 'Zufallswiedergabe (Shuffle ON)' : 'Reihenfolge (Shuffle OFF)'}
-              className={`px-2 py-1 border text-xs font-bold rounded transition active:scale-95 cursor-pointer ${
-                isShuffle
-                  ? 'bg-[#00ffcc] text-black border-[#00ffcc] shadow-[0_0_5px_#00ffcc]'
-                  : 'bg-[#222429] text-[#777] border-[#444]'
-              }`}
-            >
-              {isShuffle ? 'MIX' : '123'}
-            </button>
-          </div>
-        </div>
-        <audio
-          ref={handleAudioRef}
-          onTimeUpdate={() => {
-            if (audioRef.current) setCurrentTime(audioRef.current.currentTime);
-          }}
-          onLoadedMetadata={() => {
-            if (audioRef.current) setDuration(audioRef.current.duration);
-          }}
-          onEnded={onNextSong}
-          crossOrigin="anonymous"
-          className="hidden"
-        />
+        {!isPlaylistOpen && <MarqueeBottom extractedTitle={extractedTitle}/>}
       </div>
-      <div className={isEqualizerOpen ? 'visible' : 'hidden'}>
-        <Equalizer audioContext={audioContext} sourceNode={sourceNode} />
-      </div>
-    </div>
+    </>
   );
 };
 
