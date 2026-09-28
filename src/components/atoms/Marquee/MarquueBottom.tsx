@@ -32,12 +32,12 @@ export const MarqueeBottom: React.FC<BottomMarqueeProps> = ({ extractedTitle }) 
     // 2. Timer für den Start des Ausblendens nach 5 Sekunden
     const hideTimer = setTimeout(() => {
       setIsVisible(false); // Startet das Ausblenden (Opacity -> 0)
-    }, 5000);
+    }, 15000);
     
     // 3. Timer, der das Element nach Ende der Animation (z.B. nach 500ms) komplett aus dem DOM wirft
     const removeTimer = setTimeout(() => {
       setShouldRender(false);
-    }, 15000); // 5000ms Anzeige + 500ms Fade-out-Dauer
+    }, 15500); // 5000ms Anzeige + 500ms Fade-out-Dauer
     
     // Cleanup bei neuem Titel / Unmount
     return () => {
